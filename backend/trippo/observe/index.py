@@ -1,12 +1,18 @@
 """PositionIndex -- "where was the user at time T?"
 
-Built from every positioned observation: timeline breadcrumbs (Layer 2, ADR-0009), GPX
-trackpoints, and geotagged media. Used to give photos a position when EXIF has none
+Built from every *measured* position: timeline breadcrumbs (Layer 2, ADR-0009), GPX
+trackpoints, and EXIF-geotagged media. Used to give photos a position when EXIF has none
 (pathology P6), and to give sparse crossings a geometry.
 
-Returns `None` rather than guessing when no source covers an instant. A photo taken
-mid-ferry with no timeline and no track is genuinely unlocatable, and the product says so
-instead of inventing a coordinate. ADR-0007.
+Two rules keep this honest:
+
+* **Only trusted positions contribute.** A position Trippo inferred must never become
+  evidence for the next inference -- that compounds error and manufactures a route out of
+  nothing. Geotagged photos *are* measurements and do contribute; a single geotagged shot
+  can locate the whole burst around it.
+* **Never interpolate across a void.** Returns `None` rather than guessing. A photo taken
+  mid-ferry with no covering source is genuinely unlocatable, and the product says so
+  instead of inventing a coordinate (ADR-0007).
 """
 
 from __future__ import annotations
@@ -15,7 +21,7 @@ import bisect
 from datetime import datetime, timedelta
 
 from trippo.domain.geo import interpolate
-from trippo.observe.models import NormalizedObservation, ObservationKind
+from trippo.observe.models import NormalizedObservation
 
 #: Never interpolate across a hole larger than this -- the result would be fiction.
 MAX_INTERPOLATION_GAP = timedelta(hours=1)
@@ -25,8 +31,8 @@ class PositionIndex:
     def __init__(self, observations: list[NormalizedObservation]) -> None:
         fixes: list[tuple[datetime, float, float]] = []
         for o in observations:
-            if o.kind is ObservationKind.MEDIA:
-                continue  # media are consumers of the index, not contributors
+            if not o.trusted_position:
+                continue
             if o.has_position:
                 fixes.append((o.t, o.lat, o.lon))  # type: ignore[arg-type]
             if o.end_t and o.end_lat is not None and o.end_lon is not None:

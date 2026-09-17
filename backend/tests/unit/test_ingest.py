@@ -201,8 +201,14 @@ def test_position_is_not_invented_across_a_void():
     assert idx.at(datetime(2023, 9, 26, 10, 0, tzinfo=UTC)) is None
 
 
-def test_media_observations_do_not_feed_the_index():
-    """Otherwise a photo's inferred position would become evidence for the next photo."""
+def test_untrusted_positions_do_not_feed_the_index():
+    """An inferred position must never become evidence for the next inference.
+
+    Superseded an earlier, blunter rule that excluded *all* media. Geotagged photos are
+    measurements and should help locate their neighbours -- see
+    tests/unit/test_position_resolution.py. What must never re-enter the index is a
+    position Trippo worked out itself.
+    """
     idx = PositionIndex(
         [
             NormalizedObservation(
@@ -211,6 +217,7 @@ def test_media_observations_do_not_feed_the_index():
                 source_id="m",
                 lat=54.0,
                 lon=-6.0,
+                trusted_position=False,
             )
         ]
     )

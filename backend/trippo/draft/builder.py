@@ -17,8 +17,13 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta, timezone
 
-from trippo.config.heuristics import CONFIDENCE_MEDIA_CLUSTER, CONFIDENCE_TIMELINE_MOVE
-from trippo.domain.geo import haversine_m
+from trippo.config.heuristics import (
+    CONFIDENCE_MEDIA_CLUSTER,
+    CONFIDENCE_TIMELINE_MOVE,
+    PLACE_CONFIDENCE_FROM_EXIF,
+    PLACE_CONFIDENCE_FROM_INFERRED,
+)
+from trippo.domain.geo import centroid, haversine_m
 from trippo.domain.models import (
     AbsorbedRef,
     ActivityDetail,
@@ -89,8 +94,12 @@ class BuildTrace:
     phantoms: list[str] = field(default_factory=list)
     masked_by_gpx: list[str] = field(default_factory=list)
     gaps: list[str] = field(default_factory=list)
+    #: Media positions by provenance. The mix is worth showing: a trip where most photos
+    #: carry their own GPS is qualitatively better than one relying on interpolation.
+    media_gps_exif: int = 0
     inferred_positions: int = 0
     unlocatable_media: int = 0
+    events_placed_by_media: int = 0
 
 
 def _nid(prefix: str) -> str:
@@ -115,7 +124,8 @@ def build(inputs: BuildInputs) -> tuple[Trip, BuildTrace]:
     phantom_refs = {p.observation.ref for p in phantoms}
     trace.phantoms = [f"{p.observation.ref}: {p.reason}" for p in phantoms]
 
-    # 4 -- position index from everything that has a position (ADR-0009 layer 2)
+    # 4 -- position index from every *measured* position (ADR-0009 layer 2).
+    # EXIF-geotagged media are measurements and contribute; inferred ones never do.
     track_obs = [
         NormalizedObservation(
             t=p.t,
@@ -130,17 +140,27 @@ def build(inputs: BuildInputs) -> tuple[Trip, BuildTrace]:
     ]
     index = PositionIndex(obs + track_obs)
 
-    # 5 -- give position-less media a location, or admit we cannot (P6)
+    # 5 -- resolve a position for every media item, best source first (P6).
+    #   EXIF GPS  >  interpolation from timeline/GPX/geotagged photos  >  admit defeat
     for m in inputs.media:
-        if m.lat is None and m.captured_at is not None:
-            pos = index.at(m.captured_at)
-            if pos:
-                m.lat, m.lon = pos
-                m.location_source = LocationSource.INFERRED
-                trace.inferred_positions += 1
-            else:
-                m.location_source = LocationSource.NONE
-                trace.unlocatable_media += 1
+        if m.location_source is LocationSource.EXIF:
+            trace.media_gps_exif += 1
+            continue
+        if m.lat is not None:
+            continue
+        if m.captured_at is None:
+            trace.unlocatable_media += 1
+            m.location_source = LocationSource.NONE
+            continue
+        pos = index.at(m.captured_at)
+        if pos:
+            m.lat, m.lon = pos
+            m.location_source = LocationSource.INFERRED
+            trace.inferred_positions += 1
+        else:
+            m.location_source = LocationSource.NONE
+            trace.unlocatable_media += 1
+
 
     events: list[Event] = []
     tracks_meta: list[TrackMeta] = []
@@ -270,6 +290,12 @@ def build(inputs: BuildInputs) -> tuple[Trip, BuildTrace]:
     events.extend(_photo_only_events(unassigned_media, inputs.default_offset_minutes))
     events.sort(key=lambda e: (e.start, e.end))
     unassigned_media = _attach_media(events, inputs.media)
+
+    # 11b -- an event with no coordinates can borrow one from its own photos.
+    # Timeline visits always carry coordinates, but photo-derived and manual events may
+    # not, and a geotagged photo is the best evidence available for where they happened.
+    trace.events_placed_by_media += _place_events_from_media(events, inputs.media)
+
 
     # 12 -- days, then the Golden Rule
     days = _build_days(events, inputs)
@@ -509,6 +535,54 @@ def _photo_only_events(media: list[MediaAsset], default_offset: int) -> list[Eve
             )
         )
     return out
+
+
+def _place_events_from_media(events: list[Event], media: list[MediaAsset]) -> int:
+    """Locate events from their attached photos, and record how well.
+
+    Applies to events with no coordinate at all, and to ones carrying only a bare
+    coordinate label with no confidence -- the photo-only clusters, which know where they
+    are but not how much to trust it.
+
+    Prefers EXIF-geotagged media (a measured fix) and falls back to inferred positions.
+    `place.confidence` records which, so the UI, the geocoder and the ranking logic can
+    weight it accordingly.
+    """
+    by_id = {m.id: m for m in media}
+    placed = 0
+
+    for e in events:
+        if e.type is EventType.UNKNOWN:
+            continue  # an unaccounted gap must not acquire a location (ADR-0007)
+        already_trusted = (
+            e.place is not None and e.place.lat is not None and e.place.confidence > 0
+        )
+        if already_trusted:
+            continue
+
+        attached = [m for m in (by_id.get(i) for i in e.media_ids) if m and m.lat is not None]
+        if not attached:
+            continue
+
+        exact = [m for m in attached if m.location_source is LocationSource.EXIF]
+        chosen = exact or attached
+        coord = centroid([(m.lat, m.lon) for m in chosen])  # type: ignore[misc]
+
+        e.place = Place(
+            name=f"{coord[0]:.4f}, {coord[1]:.4f}",
+            lat=coord[0],
+            lon=coord[1],
+            source=PlaceSource.COORDS,
+            confidence=PLACE_CONFIDENCE_FROM_EXIF if exact else PLACE_CONFIDENCE_FROM_INFERRED,
+        )
+        e.geometry = e.geometry or Geometry(kind="point")
+        e.provenance.rules.append(
+            f"located from {len(chosen)} "
+            + ("geotagged photo(s)" if exact else "photo(s) with inferred positions")
+        )
+        placed += 1
+
+    return placed
 
 
 def _build_days(events: list[Event], inputs: BuildInputs) -> list[Day]:

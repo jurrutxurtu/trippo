@@ -19,6 +19,7 @@ from trippo.domain.models import (
     EventStatus,
     EventType,
     IngestionReport,
+    LocationSource,
     MediaAsset,
     MediaKind,
     Source,
@@ -157,6 +158,9 @@ def cmd_build(args: argparse.Namespace) -> int:
             lat=m.lat,
             lon=m.lon,
             ref=m.id,
+            # Only a camera-recorded fix counts as a measurement. Anything Trippo works
+            # out later must not feed back into the position index.
+            trusted_position=m.location_source is LocationSource.EXIF,
         )
         for m in media
         if m.captured_at is not None
@@ -208,10 +212,16 @@ def _print_summary(trip, trace, reports: list[IngestionReport]) -> None:
         modes = "  ".join(f"{k}={v / 1000:.0f}km" for k, v in sorted(s.distance_by_mode_m.items()))
         print(f"  distance: {modes}")
     print(f"  unaccounted: {s.unaccounted_count} gap(s), {s.unaccounted_hours:.1f} h")
-    print(
-        f"  positions inferred for {trace.inferred_positions} media; "
-        f"{trace.unlocatable_media} unlocatable"
-    )
+    located = trace.media_gps_exif + trace.inferred_positions
+    total_media = s.photo_count + s.video_count
+    if total_media:
+        print(
+            f"  media positions: {trace.media_gps_exif} from EXIF GPS, "
+            f"{trace.inferred_positions} inferred, {trace.unlocatable_media} unlocatable "
+            f"({located}/{total_media} located)"
+        )
+    if trace.events_placed_by_media:
+        print(f"  {trace.events_placed_by_media} event(s) located from their photos")
 
     degradations = [d for r in reports for d in r.degradations]
     if degradations:

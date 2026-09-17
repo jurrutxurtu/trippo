@@ -90,6 +90,8 @@ Failing events are `suppressed` with a reason, **never deleted**.
 |---|---|---|
 | `CONFIDENCE_TIMELINE_MOVE` | 0.6 | A provider-asserted move is usually right about *that* movement happened, less so about its mode. |
 | `CONFIDENCE_MEDIA_CLUSTER` | 0.4 | A cluster inferred from photo timestamps alone is a suggestion, and the UI should show it as one. |
+| `PLACE_CONFIDENCE_FROM_EXIF` | 0.8 | An event located from geotagged photos rests on a camera measurement. |
+| `PLACE_CONFIDENCE_FROM_INFERRED` | 0.3 | An event located from photos that were themselves interpolated. Two inferences deep — treat gently, and let the geocoder widen its search radius. |
 
 ## Two independent plausibility tests
 

@@ -68,6 +68,8 @@ NOMINATIM_MIN_INTERVAL_S: Final = 1.0
 # --------------------------------------------------------------------------- confidence
 CONFIDENCE_TIMELINE_MOVE: Final = 0.6
 CONFIDENCE_MEDIA_CLUSTER: Final = 0.4
+PLACE_CONFIDENCE_FROM_EXIF: Final = 0.8
+PLACE_CONFIDENCE_FROM_INFERRED: Final = 0.3
 
 # --------------------------------------------------------------------------- misc
 EARTH_RADIUS_M: Final = 6_371_008.8

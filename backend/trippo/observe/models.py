@@ -34,6 +34,11 @@ class NormalizedObservation:
     end_lon: float | None = None
     utc_offset_minutes: int | None = None
     ref: str | None = None  # media id, segment index, trackpoint index
+    #: True when the position was *measured* (EXIF GPS, a trackpoint, a provider fix)
+    #: rather than derived by Trippo. Only trusted positions may feed the PositionIndex;
+    #: letting an inferred position become evidence for the next inference would compound
+    #: error and quietly manufacture a route out of nothing.
+    trusted_position: bool = True
     #: Provider hints. NEVER treated as truth -- see pathology P2.
     hints: dict[str, object] = field(default_factory=dict)
 

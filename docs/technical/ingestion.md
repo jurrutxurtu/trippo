@@ -37,12 +37,38 @@ Filenames are normalised before hashing: the Google Photos export prefix `origin
 `~N` duplicate suffix are stripped. Variants `.MP` (motion photo), `.NIGHT`, `.PANO` are recorded as
 `MediaAsset.variant` and used as hero-selection signals. Motion photos are treated as plain JPEG.
 
-## Inferred geolocation — P0, not a bonus
+## Media position — the cascade
 
-Photos frequently have **no GPS at all** (see below). When `MediaAsset.lat` is absent, position is
-interpolated from the `PositionIndex` (timeline breadcrumbs and GPX trackpoints) at the photo's
-timestamp, and `location_source` is set to `inferred`. If no source covers that instant,
-`location_source` is `none` and the photo remains locatable only by the user.
+Best source first. `MediaAsset.location_source` always records which one won.
+
+| # | Source | `location_source` | Notes |
+|---|---|---|---|
+| 1 | **EXIF GPS** | `exif` | Measured by the camera. Always wins; never overwritten. |
+| 2 | **Interpolation** from the `PositionIndex` | `inferred` | Timeline breadcrumbs, GPX trackpoints, **and other photos' EXIF GPS**. |
+| 3 | **Nothing** | `none` | No source covers that instant. Admitted, not guessed. |
+
+### Only measured positions feed the index
+
+`PositionIndex` accepts an observation only when `trusted_position` is set. This is the rule
+that keeps interpolation honest:
+
+- **Geotagged photos do contribute.** One geotagged shot locates the whole burst around it. This
+  is the mixed-device case — a camera with GPS and a phone without, in the same album. Excluding
+  them would leave the phone's photos unlocatable even though the user's position is known exactly.
+- **Inferred positions never contribute.** Letting a derived position become evidence for the next
+  inference compounds error and manufactures a route out of nothing. A photo hours past any real
+  measurement stays `none`; it does not chain off its neighbour.
+- **Interpolation never crosses a void** larger than `MAX_INTERPOLATION_GAP` (1 h).
+
+### Events inherit position from their photos
+
+An event with no coordinate — a photo-derived cluster, a manually added stop — takes the centroid
+of its attached media, preferring EXIF-geotagged items over inferred ones. The distinction is kept
+in `place.confidence` (`PLACE_CONFIDENCE_FROM_EXIF` vs `PLACE_CONFIDENCE_FROM_INFERRED`) so the UI,
+the geocoder and the ranking logic can weight it.
+
+Unaccounted gaps are excluded: attaching photos to a gap must never give the gap a location
+(ADR-0007).
 
 ---
 
