@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Sequence
+from itertools import pairwise
 
 from trippo.config.heuristics import EARTH_RADIUS_M
 
@@ -45,6 +46,68 @@ def bbox(points: Sequence[Coord]) -> tuple[float, float, float, float]:
     lats = [p[0] for p in points]
     lons = [p[1] for p in points]
     return (min(lats), min(lons), max(lats), max(lons))
+
+
+def union_bbox(
+    boxes: Sequence[tuple[float, float, float, float]],
+) -> tuple[float, float, float, float] | None:
+    boxes = [b for b in boxes if b]
+    if not boxes:
+        return None
+    return (
+        min(b[0] for b in boxes),
+        min(b[1] for b in boxes),
+        max(b[2] for b in boxes),
+        max(b[3] for b in boxes),
+    )
+
+
+def pad_bbox(
+    box: tuple[float, float, float, float], metres: float
+) -> tuple[float, float, float, float]:
+    """Grow a box by roughly `metres` on every side.
+
+    A bbox fitted exactly to a track puts the trailhead against the window edge; the map
+    needs breathing room before it looks deliberate.
+    """
+    dlat = metres / 111_320.0
+    mid_lat = math.radians((box[0] + box[2]) / 2)
+    dlon = metres / max(111_320.0 * math.cos(mid_lat), 1.0)
+    return (box[0] - dlat, box[1] - dlon, box[2] + dlat, box[3] + dlon)
+
+
+def distance_to_path(p: Coord, path: Sequence[Coord]) -> float:
+    """Shortest distance in metres from a point to a polyline.
+
+    Used to decide whether a summit lies *on* a hike or merely nearby.
+    """
+    if not path:
+        return float("inf")
+    if len(path) == 1:
+        return haversine_m(p, path[0])
+    return min(
+        _perpendicular_distance_m(p, a, b) for a, b in pairwise(path)
+    )
+
+
+def offset_along_path(p: Coord, path: Sequence[Coord]) -> float:
+    """Cumulative distance in metres to the point on `path` nearest to `p`.
+
+    Lets summits and photographs be ordered along a route rather than by clock time --
+    which matters on an out-and-back, where the clock doubles back on itself.
+    """
+    if len(path) < 2:
+        return 0.0
+    best_d = float("inf")
+    best_offset = 0.0
+    cum = 0.0
+    for a, b in pairwise(path):
+        d = _perpendicular_distance_m(p, a, b)
+        if d < best_d:
+            best_d = d
+            best_offset = cum + haversine_m(a, p)
+        cum += haversine_m(a, b)
+    return best_offset
 
 
 def interpolate(a: Coord, b: Coord, frac: float) -> Coord:

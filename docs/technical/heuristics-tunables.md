@@ -125,3 +125,12 @@ See `docs/technical/enrichment.md` for the evidence behind each of these.
 | `RANK_REPEAT_WINDOW` | 4 | How many preceding events count as "nearby" for that penalty. |
 | `RANK_MIN_CLEAR_MARGIN` | 0.15 | Below this the pick is **contested** — the hook for the E4 LLM tiebreak. |
 | `PLACE_CONFIDENCE_CLEAR` / `CONTESTED` | 0.9 / 0.6 | Recorded on the place so the UI can show how sure Trippo is. |
+## Track highlights and map geometry
+
+| Constant | Value | Rationale |
+|---|---|---|
+| `PEAK_MAX_DIST_M` | 250 | A summit is something you stand on. Generous enough for GPS drift and for a tagged point sitting slightly off the cairn; on the reference data Slieve Binnian matched at 4 m and the neighbouring tops at 46–224 m. |
+| `WATER_MAX_DIST_M` | 600 | A lake is something you walk beside, and the tagged centre of a lough can be far from its shore. |
+| `ROUTE_SIMPLIFY_TOLERANCE_M` | 40 | Coarser than a track profile (8 m): at trip zoom nobody can resolve 8 m of detail, and the overview route is drawn for all 27 days at once. |
+| `ROUTE_MAX_POINTS_PER_SEGMENT` | 300 | Render budget per leg. The reference trip assembles 103 segments in ~1,550 points. |
+| `TRIP_BBOX_PAD_M` | 400 | Breathing room when fitting. A bbox fitted exactly puts the trailhead against the window edge. |

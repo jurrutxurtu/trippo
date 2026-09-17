@@ -18,8 +18,31 @@ from trippo.domain.models import SCHEMA_VERSION
 
 Migration = Callable[[dict[str, Any]], dict[str, Any]]
 
+
+def _v010_to_v020(payload: dict[str, Any]) -> dict[str, Any]:
+    """0.1.0 -> 0.2.0: map support.
+
+    Adds `Day.bbox`, `Day.stats`, `Trip.bbox`, `Trip.route` and
+    `ActivityDetail.highlights`. All are derived, so the migration only needs to leave the
+    document valid -- `domain.summarize.summarize()` refills them on the next build, and
+    `highlights` stays empty until enrichment runs again.
+    """
+    for day in payload.get("days", []):
+        day.setdefault("bbox", None)
+        day.setdefault("stats", {})
+    for event in payload.get("events", []):
+        detail = event.get("detail") or {}
+        if detail.get("kind") == "activity":
+            detail.setdefault("highlights", [])
+    payload.setdefault("bbox", None)
+    payload.setdefault("route", [])
+    return payload
+
+
 #: version -> (next_version, migration). Applied in order on read.
-MIGRATIONS: dict[str, tuple[str, Migration]] = {}
+MIGRATIONS: dict[str, tuple[str, Migration]] = {
+    "0.1.0": ("0.2.0", _v010_to_v020),
+}
 
 
 def _parse(v: str) -> tuple[int, ...]:

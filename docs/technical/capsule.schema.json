@@ -69,6 +69,13 @@
           ],
           "default": null,
           "title": "Activity Type Hint"
+        },
+        "highlights": {
+          "items": {
+            "$ref": "#/$defs/TrackHighlight"
+          },
+          "title": "Highlights",
+          "type": "array"
         }
       },
       "title": "ActivityDetail",
@@ -158,6 +165,36 @@
         }
       },
       "title": "ActivityStats",
+      "type": "object"
+    },
+    "BBox": {
+      "additionalProperties": false,
+      "description": "Geographic bounds, for fitting a map. (min_lat, min_lon, max_lat, max_lon).",
+      "properties": {
+        "min_lat": {
+          "title": "Min Lat",
+          "type": "number"
+        },
+        "min_lon": {
+          "title": "Min Lon",
+          "type": "number"
+        },
+        "max_lat": {
+          "title": "Max Lat",
+          "type": "number"
+        },
+        "max_lon": {
+          "title": "Max Lon",
+          "type": "number"
+        }
+      },
+      "required": [
+        "min_lat",
+        "min_lon",
+        "max_lat",
+        "max_lon"
+      ],
+      "title": "BBox",
       "type": "object"
     },
     "DateRange": {
@@ -256,6 +293,20 @@
           },
           "title": "Spanning Event Ids",
           "type": "array"
+        },
+        "bbox": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BBox"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "stats": {
+          "$ref": "#/$defs/DayStats"
         }
       },
       "required": [
@@ -294,6 +345,58 @@
         "date"
       ],
       "title": "DayCoverage",
+      "type": "object"
+    },
+    "DayStats": {
+      "additionalProperties": false,
+      "description": "Per-day figures for the timeline heading.\n\nElevation appears here only when the day actually contained an activity, keeping the\nscoping rule intact: a city day shows distance and photographs, nothing about climbing.",
+      "properties": {
+        "event_count": {
+          "default": 0,
+          "title": "Event Count",
+          "type": "integer"
+        },
+        "photo_count": {
+          "default": 0,
+          "title": "Photo Count",
+          "type": "integer"
+        },
+        "video_count": {
+          "default": 0,
+          "title": "Video Count",
+          "type": "integer"
+        },
+        "distance_by_mode_m": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Distance By Mode M",
+          "type": "object"
+        },
+        "ascent_m": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ascent M"
+        },
+        "has_activity": {
+          "default": false,
+          "title": "Has Activity",
+          "type": "boolean"
+        },
+        "unaccounted_hours": {
+          "default": 0.0,
+          "title": "Unaccounted Hours",
+          "type": "number"
+        }
+      },
+      "title": "DayStats",
       "type": "object"
     },
     "Event": {
@@ -1244,6 +1347,52 @@
       "title": "Provenance",
       "type": "object"
     },
+    "RouteSegment": {
+      "additionalProperties": false,
+      "description": "One drawable leg of the overall route.\n\nSegmented rather than a single polyline so the map can style each leg by what it was:\na measured GPX trail is a solid line, a ferry reconstructed from two breadcrumbs is\ndashed and labelled approximate, and an unaccounted gap is dashed with no claim at all.\nMerging them would assert a confidence the data does not support (ADR-0007).",
+      "properties": {
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "day_index": {
+          "title": "Day Index",
+          "type": "integer"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "reliability": {
+          "$ref": "#/$defs/GeometryReliability",
+          "default": "measured"
+        },
+        "points": {
+          "items": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array"
+          },
+          "title": "Points",
+          "type": "array"
+        }
+      },
+      "required": [
+        "event_id",
+        "day_index",
+        "kind"
+      ],
+      "title": "RouteSegment",
+      "type": "object"
+    },
     "Source": {
       "additionalProperties": false,
       "properties": {
@@ -1347,6 +1496,70 @@
       ],
       "title": "TimeSource",
       "type": "string"
+    },
+    "TrackHighlight": {
+      "additionalProperties": false,
+      "description": "A named feature the route passed: a summit, a pass, a lake.\n\n\"Slieve Donard, 850 m, 5.6 km in\" is the single most useful sentence about a hike, and\nneither the GPX nor the timeline contains it -- it comes from OSM along the track.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "lat": {
+          "title": "Lat",
+          "type": "number"
+        },
+        "lon": {
+          "title": "Lon",
+          "type": "number"
+        },
+        "ele_m": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ele M"
+        },
+        "offset_m": {
+          "default": 0.0,
+          "title": "Offset M",
+          "type": "number"
+        },
+        "distance_from_track_m": {
+          "default": 0.0,
+          "title": "Distance From Track M",
+          "type": "number"
+        },
+        "osm_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Osm Id"
+        }
+      },
+      "required": [
+        "name",
+        "kind",
+        "lat",
+        "lon"
+      ],
+      "title": "TrackHighlight",
+      "type": "object"
     },
     "TrackMeta": {
       "additionalProperties": false,
@@ -1739,7 +1952,7 @@
   "description": "The capsule root. Serialised to `capsule.json`.\n\nInvariant, checked on every read, write and curation operation: every media id appears\nin exactly one active event OR in `unassigned_media_ids` -- never both, never neither.",
   "properties": {
     "schema_version": {
-      "default": "0.1.0",
+      "default": "0.2.0",
       "title": "Schema Version",
       "type": "string"
     },
@@ -1852,6 +2065,24 @@
         "type": "string"
       },
       "title": "Unassigned Track Ids",
+      "type": "array"
+    },
+    "bbox": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/BBox"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "route": {
+      "items": {
+        "$ref": "#/$defs/RouteSegment"
+      },
+      "title": "Route",
       "type": "array"
     },
     "stats": {

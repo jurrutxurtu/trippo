@@ -15,7 +15,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-SCHEMA_VERSION = "0.1.0"
+SCHEMA_VERSION = "0.2.0"
 
 
 class _Base(BaseModel):
@@ -113,6 +113,43 @@ class Place(_Base):
     confidence: float = 0.0
 
 
+class BBox(_Base):
+    """Geographic bounds, for fitting a map. (min_lat, min_lon, max_lat, max_lon)."""
+
+    min_lat: float
+    min_lon: float
+    max_lat: float
+    max_lon: float
+
+    @classmethod
+    def of(cls, box: tuple[float, float, float, float]) -> BBox:
+        return cls(min_lat=box[0], min_lon=box[1], max_lat=box[2], max_lon=box[3])
+
+    def as_tuple(self) -> tuple[float, float, float, float]:
+        return (self.min_lat, self.min_lon, self.max_lat, self.max_lon)
+
+
+class TrackHighlight(_Base):
+    """A named feature the route passed: a summit, a pass, a lake.
+
+    "Slieve Donard, 850 m, 5.6 km in" is the single most useful sentence about a hike, and
+    neither the GPX nor the timeline contains it -- it comes from OSM along the track.
+    """
+
+    name: str
+    kind: str  # natural=peak, natural=saddle, mountain_pass=yes, natural=water
+    lat: float
+    lon: float
+    #: Elevation in metres. From the OSM `ele` tag where present, else the track's own
+    #: altitude at the nearest point.
+    ele_m: float | None = None
+    #: Distance along the track at which it was passed, for ordering and chart markers.
+    offset_m: float = 0.0
+    #: How far off the line it sits. A summit is metres away; a lake may be hundreds.
+    distance_from_track_m: float = 0.0
+    osm_id: str | None = None
+
+
 class Geometry(_Base):
     kind: Literal["point", "line"]
     track_id: str | None = None
@@ -208,6 +245,8 @@ class ActivityDetail(_Detail):
     kind: Literal["activity"] = "activity"
     stats: ActivityStats = Field(default_factory=ActivityStats)
     activity_type_hint: str | None = None  # from <trk><type>
+    #: Summits, passes and lakes the route passed, ordered along the track.
+    highlights: list[TrackHighlight] = Field(default_factory=list)
 
 
 class PlaceDetail(_Detail):
@@ -283,6 +322,22 @@ class Event(_Base):
         return self.type in ACTIVITY_TYPES
 
 
+class DayStats(_Base):
+    """Per-day figures for the timeline heading.
+
+    Elevation appears here only when the day actually contained an activity, keeping the
+    scoping rule intact: a city day shows distance and photographs, nothing about climbing.
+    """
+
+    event_count: int = 0
+    photo_count: int = 0
+    video_count: int = 0
+    distance_by_mode_m: dict[str, float] = Field(default_factory=dict)
+    ascent_m: float | None = None
+    has_activity: bool = False
+    unaccounted_hours: float = 0.0
+
+
 class Day(_Base):
     id: str
     index: int  # 1-based, contiguous across non-excluded days
@@ -298,6 +353,9 @@ class Day(_Base):
     #: an overnight, a multi-day gap. Rendered read-only so the day is not misreported as
     #: empty. Ownership stays with the start day, so media are never double-counted.
     spanning_event_ids: list[str] = Field(default_factory=list)
+    #: Bounds of everything that happened this day, for fitting the map.
+    bbox: BBox | None = None
+    stats: DayStats = Field(default_factory=DayStats)
 
 
 class TrackStats(ActivityStats):
@@ -410,6 +468,22 @@ class TripStats(_Base):
         return sum(self.distance_by_mode_m.values())
 
 
+class RouteSegment(_Base):
+    """One drawable leg of the overall route.
+
+    Segmented rather than a single polyline so the map can style each leg by what it was:
+    a measured GPX trail is a solid line, a ferry reconstructed from two breadcrumbs is
+    dashed and labelled approximate, and an unaccounted gap is dashed with no claim at all.
+    Merging them would assert a confidence the data does not support (ADR-0007).
+    """
+
+    event_id: str
+    day_index: int
+    kind: str  # the EventType value
+    reliability: GeometryReliability = GeometryReliability.MEASURED
+    points: list[tuple[float, float]] = Field(default_factory=list)
+
+
 class DateRange(_Base):
     start: date
     end: date
@@ -441,6 +515,11 @@ class Trip(_Base):
 
     unassigned_media_ids: list[str] = Field(default_factory=list)
     unassigned_track_ids: list[str] = Field(default_factory=list)
+
+    #: Bounds of the whole trip, for the map's opening view.
+    bbox: BBox | None = None
+    #: Drawable legs of the overall route, simplified for rendering and styled by mode.
+    route: list[RouteSegment] = Field(default_factory=list)
 
     stats: TripStats = Field(default_factory=TripStats)
 

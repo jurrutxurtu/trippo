@@ -80,6 +80,20 @@ OVERPASS_MAX_FEATURES: Final = 200
 #: Points sampled along an activity track when looking for summits and lakes.
 TRACK_SAMPLE_POINTS: Final = 6
 
+# --------------------------------------------------------------------------- track highlights
+#: A summit is something you stand on; GPS drift allows for a few tens of metres.
+PEAK_MAX_DIST_M: Final = 250.0
+#: A lake is something you walk beside, and its tagged centre may be far from the shore.
+WATER_MAX_DIST_M: Final = 600.0
+
+# --------------------------------------------------------------------------- map geometry
+#: Douglas-Peucker tolerance for the overview route. Coarser than a track profile: at trip
+#: zoom nobody can see 8 m of detail.
+ROUTE_SIMPLIFY_TOLERANCE_M: Final = 40.0
+ROUTE_MAX_POINTS_PER_SEGMENT: Final = 300
+#: Breathing room when fitting the map to a bbox, so nothing sits against the window edge.
+TRIP_BBOX_PAD_M: Final = 400.0
+
 # --------------------------------------------------------------------------- ranking
 RANK_W_TYPE: Final = 1.0
 RANK_W_DISTANCE: Final = 0.7

@@ -42,6 +42,7 @@ from trippo.domain.models import (
     PlaceSource,
     Trip,
 )
+from trippo.domain.summarize import summarize
 from trippo.enrich.cache import GeocodeCache, cache_key
 from trippo.enrich.rank import RankContext, best
 from trippo.ports.geocoder import GeocodeQuery, Geocoder, PlaceCandidate
@@ -116,6 +117,12 @@ def enrich_trip(
     # Transit legs read as "A -> B" and borrow from their neighbours, so they must run
     # after every place has been resolved.
     _label_transits(trip)
+
+    # Names have changed, so day titles and subtitles derived from them are now stale.
+    for day in trip.days:
+        day.title = None
+        day.subtitle = None
+    summarize(trip)
 
     report.cache_hits = cache.hits
     report.cache_misses = cache.misses

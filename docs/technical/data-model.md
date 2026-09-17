@@ -3,7 +3,7 @@
 
 # Data model (generated)
 
-Capsule schema version **0.1.0**.
+Capsule schema version **0.2.0**.
 
 This document is generated from the Pydantic models in `backend/trippo/domain/models.py`.
 For the prose contract -- layout on disk, portability rules, invariants and migrations --
@@ -15,11 +15,13 @@ see [`capsule-format.md`](capsule-format.md).
 | Model | Fields | Description |
 | --- | --- | --- |
 | `AbsorbedRef` | 4 | A segment this event swallowed -- a phantom visit (P1) or a duplicate (P4). |
-| `ActivityDetail` | 3 |  |
+| `ActivityDetail` | 4 |  |
 | `ActivityStats` | 10 | Telemetry. Lives ONLY on track-bearing activity events -- never on a trip. |
+| `BBox` | 4 | Geographic bounds, for fitting a map. (min_lat, min_lon, max_lat, max_lon). |
 | `DateRange` | 2 |  |
-| `Day` | 10 |  |
+| `Day` | 12 |  |
 | `DayCoverage` | 4 |  |
+| `DayStats` | 7 | Per-day figures for the timeline heading. |
 | `Event` | 20 |  |
 | `FerryDetail` | 7 |  |
 | `FlightDetail` | 6 |  |
@@ -30,8 +32,10 @@ see [`capsule-format.md`](capsule-format.md).
 | `Place` | 9 |  |
 | `PlaceDetail` | 4 |  |
 | `Provenance` | 5 |  |
+| `RouteSegment` | 5 | One drawable leg of the overall route. |
 | `Source` | 7 |  |
 | `SourceRef` | 2 |  |
+| `TrackHighlight` | 8 | A named feature the route passed: a summit, a pass, a lake. |
 | `TrackMeta` | 13 |  |
 | `TrackStats` | 10 |  |
 | `TransitDetail` | 5 |  |
@@ -70,6 +74,7 @@ A segment this event swallowed -- a phantom visit (P1) or a duplicate (P4).
 | `kind` | `string` | no |  |
 | `stats` | `ActivityStats` | no |  |
 | `activity_type_hint` | `string` \| `null` | no |  |
+| `highlights` | array of `TrackHighlight` | no |  |
 
 ### ActivityStats
 
@@ -90,6 +95,17 @@ Ascent and descent use ELEVATION_THRESHOLD_M; without it GPS noise reports
 | `avg_hr` | `number` \| `null` | no |  |
 | `max_hr` | `number` \| `null` | no |  |
 | `elevation_threshold_m` | `number` | no |  |
+
+### BBox
+
+Geographic bounds, for fitting a map. (min_lat, min_lon, max_lat, max_lon).
+
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `min_lat` | `number` | yes |  |
+| `min_lon` | `number` | yes |  |
+| `max_lat` | `number` | yes |  |
+| `max_lon` | `number` | yes |  |
 
 ### DateRange
 
@@ -112,6 +128,8 @@ Ascent and descent use ELEVATION_THRESHOLD_M; without it GPS noise reports
 | `note` | `string` \| `null` | no |  |
 | `event_ids` | array of `string` | no |  |
 | `spanning_event_ids` | array of `string` | no |  |
+| `bbox` | `BBox` \| `null` | no |  |
+| `stats` | `DayStats` | no |  |
 
 ### DayCoverage
 
@@ -121,6 +139,23 @@ Ascent and descent use ELEVATION_THRESHOLD_M; without it GPS noise reports
 | `timeline_records` | `integer` | no |  |
 | `media_count` | `integer` | no |  |
 | `track_count` | `integer` | no |  |
+
+### DayStats
+
+Per-day figures for the timeline heading.
+
+Elevation appears here only when the day actually contained an activity, keeping the
+scoping rule intact: a city day shows distance and photographs, nothing about climbing.
+
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `event_count` | `integer` | no |  |
+| `photo_count` | `integer` | no |  |
+| `video_count` | `integer` | no |  |
+| `distance_by_mode_m` | `object` | no |  |
+| `ascent_m` | `number` \| `null` | no |  |
+| `has_activity` | `boolean` | no |  |
+| `unaccounted_hours` | `number` | no |  |
 
 ### Event
 
@@ -267,6 +302,23 @@ Surfaced to the user BEFORE the draft. Degradations are never silent.
 | `absorbed` | array of `AbsorbedRef` | no |  |
 | `superseded_by` | `string` \| `null` | no |  |
 
+### RouteSegment
+
+One drawable leg of the overall route.
+
+Segmented rather than a single polyline so the map can style each leg by what it was:
+a measured GPX trail is a solid line, a ferry reconstructed from two breadcrumbs is
+dashed and labelled approximate, and an unaccounted gap is dashed with no claim at all.
+Merging them would assert a confidence the data does not support (ADR-0007).
+
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `event_id` | `string` | yes |  |
+| `day_index` | `integer` | yes |  |
+| `kind` | `string` | yes |  |
+| `reliability` | `GeometryReliability` | no |  |
+| `points` | array of array of `any` | no |  |
+
 ### Source
 
 | Field | Type | Required | Notes |
@@ -285,6 +337,24 @@ Surfaced to the user BEFORE the draft. Degradations are never silent.
 | --- | --- | --- | --- |
 | `source_id` | `string` | yes |  |
 | `ref` | `string` \| `null` | no |  |
+
+### TrackHighlight
+
+A named feature the route passed: a summit, a pass, a lake.
+
+"Slieve Donard, 850 m, 5.6 km in" is the single most useful sentence about a hike, and
+neither the GPX nor the timeline contains it -- it comes from OSM along the track.
+
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `name` | `string` | yes |  |
+| `kind` | `string` | yes |  |
+| `lat` | `number` | yes |  |
+| `lon` | `number` | yes |  |
+| `ele_m` | `number` \| `null` | no |  |
+| `offset_m` | `number` | no |  |
+| `distance_from_track_m` | `number` | no |  |
+| `osm_id` | `string` \| `null` | no |  |
 
 ### TrackMeta
 

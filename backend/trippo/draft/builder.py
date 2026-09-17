@@ -49,6 +49,7 @@ from trippo.domain.models import (
     UnknownDetail,
 )
 from trippo.domain.stats import compute_trip_stats
+from trippo.domain.summarize import summarize
 from trippo.draft.cluster import cluster_media
 from trippo.draft.dedup import dedup_visits
 from trippo.draft.gaps import find_gaps
@@ -322,6 +323,8 @@ def build(inputs: BuildInputs) -> tuple[Trip, BuildTrace]:
             t.id for t in tracks_meta if not any(t.id in e.track_ids for e in events)
         ],
     )
+    # Derived presentation data: day titles, per-day stats, bounds, the overview route.
+    summarize(trip)
     trip.stats = compute_trip_stats(trip)
     return trip, trace
 

@@ -184,7 +184,7 @@ def cmd_build(args: argparse.Namespace) -> int:
 
     # ---------------------------------------------------------------- enrich
     if args.enrich:
-        _enrich(trip, args)
+        _enrich(trip, args, {t.id: t for t in tracks})
 
     _print_summary(trip, trace, reports)
 
@@ -218,7 +218,7 @@ def cmd_build(args: argparse.Namespace) -> int:
     return 0
 
 
-def _enrich(trip, args: argparse.Namespace) -> None:
+def _enrich(trip, args: argparse.Namespace, tracks_by_id: dict) -> None:
     """Resolve place names. Never fatal -- providers are public and best-effort."""
     from trippo.domain.stats import compute_trip_stats
     from trippo.enrich.cache import GeocodeCache
@@ -242,12 +242,50 @@ def _enrich(trip, args: argparse.Namespace) -> None:
         print(f"           {done}/{total}  {label:<20}", flush=True, end="\r")
 
     report = enrich_trip(trip, providers, cache, deep_lookup=deep, progress=progress)
+
+    if not args.offline:
+        _find_summits(trip, tracks_by_id)
+
     cache.close()
     print(" " * 60, end="\r")
     print(f"[enrich]   {report.summary()}")
     for d in report.degradations:
         print(f"           ! {d}")
     trip.stats = compute_trip_stats(trip)
+
+
+def _find_summits(trip, tracks_by_id: dict) -> None:
+    """Name the summits, passes and lakes each activity passed.
+
+    Uses full track points, not the simplified line: a summit is a few tens of metres
+    off-route and simplification can move the line past it.
+    """
+    from trippo.domain.models import ActivityDetail
+    from trippo.enrich.peaks import PeakFinder
+
+    activities = [e for e in trip.active_events if e.track_ids]
+    if not activities:
+        return
+
+    finder = PeakFinder()
+    total = 0
+    print(f"[summits]  scanning {len(activities)} activity track(s) ...", flush=True)
+    for e in activities:
+        parsed = tracks_by_id.get(e.track_ids[0])
+        if parsed is None or not isinstance(e.detail, ActivityDetail):
+            continue
+        path = [(p.lat, p.lon) for p in parsed.points]
+        eles = [p.ele for p in parsed.points]
+        highlights = finder.find(path, eles)
+        e.detail.highlights = highlights
+        total += len(highlights)
+        peaks = [h.name for h in highlights if h.kind == "natural=peak"]
+        if peaks:
+            print(f"           {e.title}: {', '.join(peaks[:3])}")
+
+    print(f"[summits]  {total} feature(s) across {len(activities)} track(s)")
+    if finder.failures:
+        print(f"           ! {finder.failures} Overpass request(s) failed")
 
 
 class _CacheOnly:

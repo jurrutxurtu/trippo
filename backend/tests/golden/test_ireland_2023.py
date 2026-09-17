@@ -277,3 +277,50 @@ def test_trip_stats_carry_no_elevation(trip):
 
 def test_capsule_invariants_hold(trip):
     assert collect(trip) == []
+
+
+# --------------------------------------------------------------------------- map support
+
+
+def test_every_day_gets_a_title(trip):
+    """The explorer timeline needs a heading for each day, including the empty ones."""
+    assert all(d.title for d in trip.days)
+
+
+def test_the_hiking_day_is_titled_after_the_hike(trip):
+    day = _day(trip, date(2023, 9, 23))
+    assert day.title == "County Wicklow Hiking"
+
+
+def test_days_with_anything_positioned_have_bounds(trip):
+    """Without a bbox the map cannot fit to a day."""
+    for d in trip.days:
+        if any(e.place and e.place.lat is not None for e in _events_on(trip, d.date)):
+            assert d.bbox is not None, f"day {d.index} has places but no bounds"
+            assert d.bbox.min_lat < d.bbox.max_lat
+
+
+def test_the_trip_has_bounds_spanning_the_whole_journey(trip):
+    """The fixture is coordinate-shifted, so assert on the span, not on absolutes."""
+    assert trip.bbox is not None
+    box = trip.bbox
+    assert box.max_lat - box.min_lat > 8, "should span the crossing as well as Ireland"
+    assert box.max_lon - box.min_lon > 5
+
+
+def test_the_route_is_segmented_and_styled_by_reliability(trip):
+    assert trip.route, "no overview route was assembled"
+    kinds = {s.kind for s in trip.route}
+    assert "drive" in kinds and "hike" in kinds
+
+    # An unaccounted gap must never be drawn as a measured route (ADR-0007).
+    for seg in trip.route:
+        if seg.kind == "unknown":
+            assert seg.reliability.value == "assumed"
+
+
+def test_activity_elevation_stays_off_city_days(trip):
+    """A day without a track must carry no ascent figure at all."""
+    for d in trip.days:
+        if not any(e.track_ids for e in _events_on(trip, d.date)):
+            assert d.stats.ascent_m is None, f"day {d.index} leaked an ascent figure"
