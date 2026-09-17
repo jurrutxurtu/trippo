@@ -190,6 +190,22 @@ def cmd_build(args: argparse.Namespace) -> int:
 
     if args.out:
         out = Path(args.out)
+        out.mkdir(parents=True, exist_ok=True)
+
+        if args.derivatives and local_paths:
+            from trippo.ingest.media.derivatives import generate
+
+            print("[thumbs]   generating derivatives ...", flush=True)
+
+            def dprog(done: int, total: int) -> None:
+                print(f"           {done}/{total}", flush=True, end="\r")
+
+            dreport = generate(trip.media, local_paths, out, progress=dprog)
+            print(" " * 40, end="\r")
+            print(f"[thumbs]   {dreport.summary()}")
+            for d in dreport.degradations:
+                print(f"           ! {d}")
+
         capsule_io.write(trip, out, local_paths=local_paths, reports=reports)
         # Track originals and simplified geometry live beside capsule.json.
         for t in tracks:
@@ -360,6 +376,11 @@ def main(argv: list[str] | None = None) -> int:
         "--offline", action="store_true", help="enrich from the cache only; no network"
     )
     b.add_argument("--cache", help="geocode cache path (default ~/.trippo/)")
+    b.add_argument(
+        "--derivatives",
+        action="store_true",
+        help="generate thumbnails and web-sized copies into the capsule",
+    )
     b.set_defaults(func=cmd_build)
 
     args = p.parse_args(argv)

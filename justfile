@@ -50,7 +50,11 @@ fixture timeline gpx:
     cd backend && .venv/Scripts/python.exe scripts/make_fixture.py \
         --timeline "{{timeline}}" --gpx "{{gpx}}" --out ../fixtures/golden/ireland-2023
 
-# Regenerate the design prototypes from a built capsule.
+# Regenerate the design prototypes from a built capsule, and copy its thumbnails
+# alongside them so the pages resolve <img> without a server.
 prototypes capsule:
     cd backend && .venv/Scripts/python.exe scripts/make_prototypes.py \
         --capsule "{{capsule}}" --out ../prototypes
+    powershell -NoProfile -Command \
+        "New-Item -ItemType Directory -Force -Path prototypes/capsule/media | Out-Null; \
+         Copy-Item '{{capsule}}/media/thumb' -Destination prototypes/capsule/media/ -Recurse -Force"

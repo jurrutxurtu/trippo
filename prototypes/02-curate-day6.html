@@ -1,0 +1,861 @@
+<!doctype html>
+<html lang="en" class="">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1280">
+<title>Trippo &middot; Curate &middot; Day 6</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+</head>
+<body class="h-screen overflow-hidden bg-zinc-100 text-zinc-900 antialiased">
+
+<div class="flex h-screen flex-col">
+  <header class="flex h-14 shrink-0 items-center justify-between border-b border-zinc-200
+                 bg-white px-5">
+    <div class="flex items-center gap-4">
+      <span class="text-sm font-semibold tracking-tight">Ireland 2023</span>
+      <span class="text-xs text-zinc-400">
+        2023-09-20 &ndash; 2023-10-16 &middot;
+        27 days</span>
+      <span class="rounded bg-zinc-100 px-2 py-0.5 text-[11px] text-zinc-600"></span>
+    </div>
+    <div class="flex items-center gap-2">
+      <div class="mr-3 flex items-center gap-3 text-xs">
+        <span class="flex items-center gap-1.5 text-amber-700">
+          <span class="inline-block h-2 w-2 rounded-full bg-amber-400"></span>
+          3 unaccounted</span>
+        <span class="flex items-center gap-1.5 text-zinc-500">
+          <span class="inline-block h-2 w-2 rounded-full bg-zinc-300"></span>58 to confirm</span>
+      </div>
+      <button class="rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-500
+                     hover:bg-zinc-100">Undo</button>
+      <button class="rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-medium text-white
+                     shadow-sm hover:bg-indigo-500">Finish &amp; view capsule</button>
+    </div>
+  </header>
+
+  <div class="flex min-h-0 flex-1">
+    <!-- day rail -->
+    <nav class="flex w-52 shrink-0 flex-col border-r border-zinc-200 bg-white">
+      <div class="flex items-center justify-between px-3 py-2.5">
+        <span class="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">Days</span>
+        <div class="flex items-center gap-1 text-[10px] text-zinc-400">
+          <span class="h-1 w-2.5 rounded-sm bg-sky-400" title="timeline"></span>
+          <span class="h-1 w-2.5 rounded-sm bg-violet-400" title="photos"></span>
+          <span class="h-1 w-2.5 rounded-sm bg-emerald-500" title="tracks"></span>
+        </div>
+      </div>
+      <div class="min-h-0 flex-1 overflow-y-auto pb-4">
+        
+        <a href="02-curate-day1.html" class="block w-full px-3 py-1.5 text-left hover:bg-zinc-50">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-zinc-900">
+              Day 1</span>
+            <span class="flex items-center gap-0.5"><span class="h-1 w-3 rounded-sm bg-sky-400"></span><span class="h-1 w-3 rounded-sm bg-violet-400"></span><span class="h-1 w-3 rounded-sm bg-zinc-200"></span></span>
+          </div>
+          <div class="mt-0.5 flex items-center justify-between">
+            <span class="text-[11px] text-zinc-500">Wed 20 Sep</span>
+            <span class="flex items-center gap-1 text-[11px] text-zinc-400">
+              
+              3 ev &middot; 12 ph
+            </span>
+          </div>
+        </a>
+        <a href="02-curate-day2.html" class="block w-full px-3 py-1.5 text-left hover:bg-zinc-50">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-zinc-900">
+              Day 2</span>
+            <span class="flex items-center gap-0.5"><span class="h-1 w-3 rounded-sm bg-sky-400"></span><span class="h-1 w-3 rounded-sm bg-violet-400"></span><span class="h-1 w-3 rounded-sm bg-zinc-200"></span></span>
+          </div>
+          <div class="mt-0.5 flex items-center justify-between">
+            <span class="text-[11px] text-zinc-500">Thu 21 Sep</span>
+            <span class="flex items-center gap-1 text-[11px] text-zinc-400">
+              <span class="text-amber-500">&#9679;</span>
+              5 ev &middot; 61 ph
+            </span>
+          </div>
+        </a>
+        <a href="02-curate-day3.html" class="block w-full px-3 py-1.5 text-left hover:bg-zinc-50">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-zinc-900">
+              Day 3</span>
+            <span class="flex items-center gap-0.5"><span class="h-1 w-3 rounded-sm bg-zinc-200"></span><span class="h-1 w-3 rounded-sm bg-violet-400"></span><span class="h-1 w-3 rounded-sm bg-zinc-200"></span></span>
+          </div>
+          <div class="mt-0.5 flex items-center justify-between">
+            <span class="text-[11px] text-zinc-500">Fri 22 Sep</span>
+            <span class="flex items-center gap-1 text-[11px] text-zinc-400">
+              <span class="text-amber-500">&#9679;</span>
+              0 ev
+            </span>
+          </div>
+        </a>
+        <a href="02-curate-day4.html" class="block w-full px-3 py-1.5 text-left hover:bg-zinc-50">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-zinc-900">
+              Day 4</span>
+            <span class="flex items-center gap-0.5"><span class="h-1 w-3 rounded-sm bg-sky-400"></span><span class="h-1 w-3 rounded-sm bg-violet-400"></span><span class="h-1 w-3 rounded-sm bg-emerald-500"></span></span>
+          </div>
+          <div class="mt-0.5 flex items-center justify-between">
+            <span class="text-[11px] text-zinc-500">Sat 23 Sep</span>
+            <span class="flex items-center gap-1 text-[11px] text-zinc-400">
+              <span class="text-amber-500">&#9679;</span>
+              4 ev
+            </span>
+          </div>
+        </a>
+        <a href="02-curate-day5.html" class="block w-full px-3 py-1.5 text-left hover:bg-zinc-50">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-zinc-900">
+              Day 5</span>
+            <span class="flex items-center gap-0.5"><span class="h-1 w-3 rounded-sm bg-sky-400"></span><span class="h-1 w-3 rounded-sm bg-violet-400"></span><span class="h-1 w-3 rounded-sm bg-zinc-200"></span></span>
+          </div>
+          <div class="mt-0.5 flex items-center justify-between">
+            <span class="text-[11px] text-zinc-500">Sun 24 Sep</span>
+            <span class="flex items-center gap-1 text-[11px] text-zinc-400">
+              
+              14 ev &middot; 47 ph
+            </span>
+          </div>
+        </a>
+        <a href="02-curate-day6.html" class="block w-full px-3 py-1.5 text-left bg-indigo-50 ring-1 ring-inset ring-indigo-200">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-indigo-900">
+              Day 6</span>
+            <span class="flex items-center gap-0.5"><span class="h-1 w-3 rounded-sm bg-sky-400"></span><span class="h-1 w-3 rounded-sm bg-violet-400"></span><span class="h-1 w-3 rounded-sm bg-emerald-500"></span></span>
+          </div>
+          <div class="mt-0.5 flex items-center justify-between">
+            <span class="text-[11px] text-zinc-500">Mon 25 Sep</span>
+            <span class="flex items-center gap-1 text-[11px] text-zinc-400">
+              
+              11 ev &middot; 112 ph
+            </span>
+          </div>
+        </a>
+        <a href="02-curate-day7.html" class="block w-full px-3 py-1.5 text-left hover:bg-zinc-50">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-zinc-900">
+              Day 7</span>
+            <span class="flex items-center gap-0.5"><span class="h-1 w-3 rounded-sm bg-sky-400"></span><span class="h-1 w-3 rounded-sm bg-violet-400"></span><span class="h-1 w-3 rounded-sm bg-zinc-200"></span></span>
+          </div>
+          <div class="mt-0.5 flex items-center justify-between">
+            <span class="text-[11px] text-zinc-500">Tue 26 Sep</span>
+            <span class="flex items-center gap-1 text-[11px] text-zinc-400">
+              
+              14 ev &middot; 99 ph
+            </span>
+          </div>
+        </a>
+        <a href="02-curate-day8.html" class="block w-full px-3 py-1.5 text-left hover:bg-zinc-50">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-zinc-900">
+              Day 8</span>
+            <span class="flex items-center gap-0.5"><span class="h-1 w-3 rounded-sm bg-sky-400"></span><span class="h-1 w-3 rounded-sm bg-violet-400"></span><span class="h-1 w-3 rounded-sm bg-zinc-200"></span></span>
+          </div>
+          <div class="mt-0.5 flex items-center justify-between">
+            <span class="text-[11px] text-zinc-500">Wed 27 Sep</span>
+            <span class="flex items-center gap-1 text-[11px] text-zinc-400">
+              
+              10 ev &middot; 203 ph
+            </span>
+          </div>
+        </a>
+        <a href="02-curate-day9.html" class="block w-full px-3 py-1.5 text-left hover:bg-zinc-50">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-zinc-900">
+              Day 9</span>
+            <span class="flex items-center gap-0.5"><span class="h-1 w-3 rounded-sm bg-sky-400"></span><span class="h-1 w-3 rounded-sm bg-violet-400"></span><span class="h-1 w-3 rounded-sm bg-zinc-200"></span></span>
+          </div>
+          <div class="mt-0.5 flex items-center justify-between">
+            <span class="text-[11px] text-zinc-500">Thu 28 Sep</span>
+            <span class="flex items-center gap-1 text-[11px] text-zinc-400">
+              
+              12 ev &middot; 67 ph
+            </span>
+          </div>
+        </a>
+        <a href="02-curate-day10.html" class="block w-full px-3 py-1.5 text-left hover:bg-zinc-50">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-zinc-900">
+              Day 10</span>
+            <span class="flex items-center gap-0.5"><span class="h-1 w-3 rounded-sm bg-sky-400"></span><span class="h-1 w-3 rounded-sm bg-violet-400"></span><span class="h-1 w-3 rounded-sm bg-emerald-500"></span></span>
+          </div>
+          <div class="mt-0.5 flex items-center justify-between">
+            <span class="text-[11px] text-zinc-500">Fri 29 Sep</span>
+            <span class="flex items-center gap-1 text-[11px] text-zinc-400">
+              
+              12 ev &middot; 106 ph
+            </span>
+          </div>
+        </a>
+        <a href="02-curate-day11.html" class="block w-full px-3 py-1.5 text-left hover:bg-zinc-50">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-zinc-900">
+              Day 11</span>
+            <span class="flex items-center gap-0.5"><span class="h-1 w-3 rounded-sm bg-sky-400"></span><span class="h-1 w-3 rounded-sm bg-violet-400"></span><span class="h-1 w-3 rounded-sm bg-zinc-200"></span></span>
+          </div>
+          <div class="mt-0.5 flex items-center justify-between">
+            <span class="text-[11px] text-zinc-500">Sat 30 Sep</span>
+            <span class="flex items-center gap-1 text-[11px] text-zinc-400">
+              
+              13 ev &middot; 60 ph
+            </span>
+          </div>
+        </a>
+        <a href="02-curate-day12.html" class="block w-full px-3 py-1.5 text-left hover:bg-zinc-50">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-zinc-900">
+              Day 12</span>
+            <span class="flex items-center gap-0.5"><span class="h-1 w-3 rounded-sm bg-sky-400"></span><span class="h-1 w-3 rounded-sm bg-violet-400"></span><span class="h-1 w-3 rounded-sm bg-emerald-500"></span></span>
+          </div>
+          <div class="mt-0.5 flex items-center justify-between">
+            <span class="text-[11px] text-zinc-500">Sun 1 Oct</span>
+            <span class="flex items-center gap-1 text-[11px] text-zinc-400">
+              
+              9 ev &middot; 79 ph
+            </span>
+          </div>
+        </a>
+        <a href="02-curate-day13.html" class="block w-full px-3 py-1.5 text-left hover:bg-zinc-50">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-zinc-900">
+              Day 13</span>
+            <span class="flex items-center gap-0.5"><span class="h-1 w-3 rounded-sm bg-sky-400"></span><span class="h-1 w-3 rounded-sm bg-violet-400"></span><span class="h-1 w-3 rounded-sm bg-zinc-200"></span></span>
+          </div>
+          <div class="mt-0.5 flex items-center justify-between">
+            <span class="text-[11px] text-zinc-500">Mon 2 Oct</span>
+            <span class="flex items-center gap-1 text-[11px] text-zinc-400">
+              
+              8 ev &middot; 13 ph
+            </span>
+          </div>
+        </a>
+        <a href="02-curate-day14.html" class="block w-full px-3 py-1.5 text-left hover:bg-zinc-50">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-zinc-900">
+              Day 14</span>
+            <span class="flex items-center gap-0.5"><span class="h-1 w-3 rounded-sm bg-sky-400"></span><span class="h-1 w-3 rounded-sm bg-violet-400"></span><span class="h-1 w-3 rounded-sm bg-zinc-200"></span></span>
+          </div>
+          <div class="mt-0.5 flex items-center justify-between">
+            <span class="text-[11px] text-zinc-500">Tue 3 Oct</span>
+            <span class="flex items-center gap-1 text-[11px] text-zinc-400">
+              
+              8 ev &middot; 9 ph
+            </span>
+          </div>
+        </a>
+        <a href="02-curate-day15.html" class="block w-full px-3 py-1.5 text-left hover:bg-zinc-50">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-zinc-900">
+              Day 15</span>
+            <span class="flex items-center gap-0.5"><span class="h-1 w-3 rounded-sm bg-sky-400"></span><span class="h-1 w-3 rounded-sm bg-violet-400"></span><span class="h-1 w-3 rounded-sm bg-zinc-200"></span></span>
+          </div>
+          <div class="mt-0.5 flex items-center justify-between">
+            <span class="text-[11px] text-zinc-500">Wed 4 Oct</span>
+            <span class="flex items-center gap-1 text-[11px] text-zinc-400">
+              
+              6 ev &middot; 1 ph
+            </span>
+          </div>
+        </a>
+        <a href="02-curate-day16.html" class="block w-full px-3 py-1.5 text-left hover:bg-zinc-50">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-zinc-900">
+              Day 16</span>
+            <span class="flex items-center gap-0.5"><span class="h-1 w-3 rounded-sm bg-sky-400"></span><span class="h-1 w-3 rounded-sm bg-violet-400"></span><span class="h-1 w-3 rounded-sm bg-zinc-200"></span></span>
+          </div>
+          <div class="mt-0.5 flex items-center justify-between">
+            <span class="text-[11px] text-zinc-500">Thu 5 Oct</span>
+            <span class="flex items-center gap-1 text-[11px] text-zinc-400">
+              
+              4 ev &middot; 17 ph
+            </span>
+          </div>
+        </a>
+        <a href="02-curate-day17.html" class="block w-full px-3 py-1.5 text-left hover:bg-zinc-50">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-zinc-900">
+              Day 17</span>
+            <span class="flex items-center gap-0.5"><span class="h-1 w-3 rounded-sm bg-sky-400"></span><span class="h-1 w-3 rounded-sm bg-violet-400"></span><span class="h-1 w-3 rounded-sm bg-emerald-500"></span></span>
+          </div>
+          <div class="mt-0.5 flex items-center justify-between">
+            <span class="text-[11px] text-zinc-500">Fri 6 Oct</span>
+            <span class="flex items-center gap-1 text-[11px] text-zinc-400">
+              
+              6 ev &middot; 62 ph
+            </span>
+          </div>
+        </a>
+        <a href="02-curate-day18.html" class="block w-full px-3 py-1.5 text-left hover:bg-zinc-50">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-zinc-900">
+              Day 18</span>
+            <span class="flex items-center gap-0.5"><span class="h-1 w-3 rounded-sm bg-sky-400"></span><span class="h-1 w-3 rounded-sm bg-violet-400"></span><span class="h-1 w-3 rounded-sm bg-zinc-200"></span></span>
+          </div>
+          <div class="mt-0.5 flex items-center justify-between">
+            <span class="text-[11px] text-zinc-500">Sat 7 Oct</span>
+            <span class="flex items-center gap-1 text-[11px] text-zinc-400">
+              
+              11 ev &middot; 32 ph
+            </span>
+          </div>
+        </a>
+        <a href="02-curate-day19.html" class="block w-full px-3 py-1.5 text-left hover:bg-zinc-50">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-zinc-900">
+              Day 19</span>
+            <span class="flex items-center gap-0.5"><span class="h-1 w-3 rounded-sm bg-sky-400"></span><span class="h-1 w-3 rounded-sm bg-violet-400"></span><span class="h-1 w-3 rounded-sm bg-emerald-500"></span></span>
+          </div>
+          <div class="mt-0.5 flex items-center justify-between">
+            <span class="text-[11px] text-zinc-500">Sun 8 Oct</span>
+            <span class="flex items-center gap-1 text-[11px] text-zinc-400">
+              
+              13 ev &middot; 83 ph
+            </span>
+          </div>
+        </a>
+        <a href="02-curate-day20.html" class="block w-full px-3 py-1.5 text-left hover:bg-zinc-50">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-zinc-900">
+              Day 20</span>
+            <span class="flex items-center gap-0.5"><span class="h-1 w-3 rounded-sm bg-sky-400"></span><span class="h-1 w-3 rounded-sm bg-violet-400"></span><span class="h-1 w-3 rounded-sm bg-zinc-200"></span></span>
+          </div>
+          <div class="mt-0.5 flex items-center justify-between">
+            <span class="text-[11px] text-zinc-500">Mon 9 Oct</span>
+            <span class="flex items-center gap-1 text-[11px] text-zinc-400">
+              
+              6 ev &middot; 27 ph
+            </span>
+          </div>
+        </a>
+        <a href="02-curate-day21.html" class="block w-full px-3 py-1.5 text-left hover:bg-zinc-50">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-zinc-900">
+              Day 21</span>
+            <span class="flex items-center gap-0.5"><span class="h-1 w-3 rounded-sm bg-sky-400"></span><span class="h-1 w-3 rounded-sm bg-violet-400"></span><span class="h-1 w-3 rounded-sm bg-zinc-200"></span></span>
+          </div>
+          <div class="mt-0.5 flex items-center justify-between">
+            <span class="text-[11px] text-zinc-500">Tue 10 Oct</span>
+            <span class="flex items-center gap-1 text-[11px] text-zinc-400">
+              
+              6 ev &middot; 21 ph
+            </span>
+          </div>
+        </a>
+        <a href="02-curate-day22.html" class="block w-full px-3 py-1.5 text-left hover:bg-zinc-50">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-zinc-900">
+              Day 22</span>
+            <span class="flex items-center gap-0.5"><span class="h-1 w-3 rounded-sm bg-sky-400"></span><span class="h-1 w-3 rounded-sm bg-violet-400"></span><span class="h-1 w-3 rounded-sm bg-zinc-200"></span></span>
+          </div>
+          <div class="mt-0.5 flex items-center justify-between">
+            <span class="text-[11px] text-zinc-500">Wed 11 Oct</span>
+            <span class="flex items-center gap-1 text-[11px] text-zinc-400">
+              
+              11 ev &middot; 13 ph
+            </span>
+          </div>
+        </a>
+        <a href="02-curate-day23.html" class="block w-full px-3 py-1.5 text-left hover:bg-zinc-50">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-zinc-900">
+              Day 23</span>
+            <span class="flex items-center gap-0.5"><span class="h-1 w-3 rounded-sm bg-sky-400"></span><span class="h-1 w-3 rounded-sm bg-violet-400"></span><span class="h-1 w-3 rounded-sm bg-zinc-200"></span></span>
+          </div>
+          <div class="mt-0.5 flex items-center justify-between">
+            <span class="text-[11px] text-zinc-500">Thu 12 Oct</span>
+            <span class="flex items-center gap-1 text-[11px] text-zinc-400">
+              
+              12 ev &middot; 30 ph
+            </span>
+          </div>
+        </a>
+        <a href="02-curate-day24.html" class="block w-full px-3 py-1.5 text-left hover:bg-zinc-50">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-zinc-900">
+              Day 24</span>
+            <span class="flex items-center gap-0.5"><span class="h-1 w-3 rounded-sm bg-sky-400"></span><span class="h-1 w-3 rounded-sm bg-violet-400"></span><span class="h-1 w-3 rounded-sm bg-zinc-200"></span></span>
+          </div>
+          <div class="mt-0.5 flex items-center justify-between">
+            <span class="text-[11px] text-zinc-500">Fri 13 Oct</span>
+            <span class="flex items-center gap-1 text-[11px] text-zinc-400">
+              
+              13 ev &middot; 65 ph
+            </span>
+          </div>
+        </a>
+        <a href="02-curate-day25.html" class="block w-full px-3 py-1.5 text-left hover:bg-zinc-50">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-zinc-900">
+              Day 25</span>
+            <span class="flex items-center gap-0.5"><span class="h-1 w-3 rounded-sm bg-sky-400"></span><span class="h-1 w-3 rounded-sm bg-violet-400"></span><span class="h-1 w-3 rounded-sm bg-zinc-200"></span></span>
+          </div>
+          <div class="mt-0.5 flex items-center justify-between">
+            <span class="text-[11px] text-zinc-500">Sat 14 Oct</span>
+            <span class="flex items-center gap-1 text-[11px] text-zinc-400">
+              <span class="text-amber-500">&#9679;</span>
+              1 ev &middot; 4 ph
+            </span>
+          </div>
+        </a>
+        <a href="02-curate-day26.html" class="block w-full px-3 py-1.5 text-left hover:bg-zinc-50">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-zinc-900">
+              Day 26</span>
+            <span class="flex items-center gap-0.5"><span class="h-1 w-3 rounded-sm bg-sky-400"></span><span class="h-1 w-3 rounded-sm bg-violet-400"></span><span class="h-1 w-3 rounded-sm bg-zinc-200"></span></span>
+          </div>
+          <div class="mt-0.5 flex items-center justify-between">
+            <span class="text-[11px] text-zinc-500">Sun 15 Oct</span>
+            <span class="flex items-center gap-1 text-[11px] text-zinc-400">
+              <span class="text-amber-500">&#9679;</span>
+              5 ev &middot; 1 ph
+            </span>
+          </div>
+        </a>
+        <a href="02-curate-day27.html" class="block w-full px-3 py-1.5 text-left hover:bg-zinc-50">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-zinc-900">
+              Day 27</span>
+            <span class="flex items-center gap-0.5"><span class="h-1 w-3 rounded-sm bg-sky-400"></span><span class="h-1 w-3 rounded-sm bg-zinc-200"></span><span class="h-1 w-3 rounded-sm bg-zinc-200"></span></span>
+          </div>
+          <div class="mt-0.5 flex items-center justify-between">
+            <span class="text-[11px] text-zinc-500">Mon 16 Oct</span>
+            <span class="flex items-center gap-1 text-[11px] text-zinc-400">
+              
+              2 ev
+            </span>
+          </div>
+        </a>
+      </div>
+    </nav>
+
+    <!-- events -->
+    <main class="flex w-[480px] shrink-0 flex-col border-r border-zinc-200 bg-zinc-50">
+      <div class="border-b border-zinc-200 bg-white px-5 py-3">
+        <div class="flex items-start justify-between">
+          <div>
+            <h2 class="text-base font-semibold">Day 6
+              <span class="ml-1.5 text-sm font-normal text-zinc-400">
+                Monday 25 September</span></h2>
+            <p class="mt-0.5 text-xs text-zinc-500">
+              11 events &middot; 101 photos</p>
+          </div>
+          <button class="rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 text-xs
+                         font-medium text-zinc-700 hover:bg-zinc-50">+ Event</button>
+        </div>
+      </div>
+      <div class="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+        
+        <div class="mb-2 rounded-lg border border-dashed border-zinc-300 bg-white/60 px-3 py-2">
+          <p class="text-[11px] text-zinc-500">
+            <span class="font-medium text-zinc-700">Continues from an earlier day</span>
+            &middot; The Mourne Way
+          </p>
+        </div>
+        
+        <ol class="space-y-2">
+          
+        <li class="rounded-xl border bg-white p-3 shadow-sm border-zinc-200 hover:border-zinc-300">
+          <div class="flex gap-2.5">
+            <div class="w-11 shrink-0 pt-0.5 text-right">
+              <span class="font-mono text-xs font-medium tabular-nums text-zinc-900">
+                07:31</span>
+            </div>
+            <div class="flex w-3 shrink-0 justify-center pt-1">
+              <span class="h-2 w-2 rounded-full bg-zinc-300"></span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-2">
+                <span class="truncate text-sm font-semibold text-zinc-900">The Mourne Way → Mayobridge</span>
+                
+              </div>
+              <div class="mt-0.5 flex items-center gap-1.5 text-[11px] text-zinc-500">
+                <span class="capitalize">&#128663; drive</span>
+                <span class="text-zinc-300">&middot;</span><span>13 min</span>
+                
+              </div>
+              
+            </div>
+          </div>
+        </li>
+        <li class="rounded-xl border bg-white p-3 shadow-sm border-zinc-200 hover:border-zinc-300">
+          <div class="flex gap-2.5">
+            <div class="w-11 shrink-0 pt-0.5 text-right">
+              <span class="font-mono text-xs font-medium tabular-nums text-zinc-900">
+                07:44</span>
+            </div>
+            <div class="flex w-3 shrink-0 justify-center pt-1">
+              <span class="h-2 w-2 rounded-full bg-sky-300"></span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-2">
+                <span class="truncate text-sm font-semibold text-zinc-900">Mayobridge</span>
+                
+              </div>
+              <div class="mt-0.5 flex items-center gap-1.5 text-[11px] text-zinc-500">
+                <span class="capitalize">&#127963; visit</span>
+                <span class="text-zinc-300">&middot;</span><span>3.0 h</span>
+                
+              </div>
+              
+            </div>
+          </div>
+        </li>
+        <li class="rounded-xl border bg-white p-3 shadow-sm border-zinc-200 hover:border-zinc-300">
+          <div class="flex gap-2.5">
+            <div class="w-11 shrink-0 pt-0.5 text-right">
+              <span class="font-mono text-xs font-medium tabular-nums text-zinc-900">
+                10:44</span>
+            </div>
+            <div class="flex w-3 shrink-0 justify-center pt-1">
+              <span class="h-2 w-2 rounded-full bg-zinc-300"></span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-2">
+                <span class="truncate text-sm font-semibold text-zinc-900">Mayobridge → Oldtown Carpark</span>
+                
+              </div>
+              <div class="mt-0.5 flex items-center gap-1.5 text-[11px] text-zinc-500">
+                <span class="capitalize">&#128663; drive</span>
+                <span class="text-zinc-300">&middot;</span><span>39 min</span>
+                <span class="text-zinc-300">&middot;</span><span>8 ph</span>
+              </div>
+              
+            <div class="mt-2 flex items-center gap-1">
+              <img src="capsule/media/thumb/2f6820068fc05ac1d085.webp" loading="lazy" alt="" class="h-10 w-10 shrink-0 rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/2aee0fae26f7cd074c0b.webp" loading="lazy" alt="" class="h-10 w-10 shrink-0 rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/dd45a3671cdd4f223b60.webp" loading="lazy" alt="" class="h-10 w-10 shrink-0 rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/2f1cbb3444b06556c273.webp" loading="lazy" alt="" class="h-10 w-10 shrink-0 rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/050726b21884d143fafb.webp" loading="lazy" alt="" class="h-10 w-10 shrink-0 rounded object-cover ring-1 ring-black/5">
+              <span class="ml-1 text-[11px] text-zinc-400">+3</span>
+            </div>
+            </div>
+          </div>
+        </li>
+        <li class="rounded-xl border bg-white p-3 shadow-sm ring-2 ring-indigo-500 border-transparent">
+          <div class="flex gap-2.5">
+            <div class="w-11 shrink-0 pt-0.5 text-right">
+              <span class="font-mono text-xs font-medium tabular-nums text-zinc-900">
+                11:44</span>
+            </div>
+            <div class="flex w-3 shrink-0 justify-center pt-1">
+              <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-2">
+                <span class="truncate text-sm font-semibold text-zinc-900">County Down Hiking</span>
+                
+              </div>
+              <div class="mt-0.5 flex items-center gap-1.5 text-[11px] text-zinc-500">
+                <span class="capitalize">&#9968; hike</span>
+                <span class="text-zinc-300">&middot;</span><span>3.2 h</span>
+                <span class="text-zinc-300">&middot;</span><span>85 ph</span>
+              </div>
+              
+            <div class="mt-1.5 flex items-center gap-3 text-[11px] tabular-nums text-zinc-600">
+              <span><b class="font-semibold text-zinc-900">12.0</b> km</span>
+              <span><b class="font-semibold text-zinc-900">+645</b> m</span>
+              <span><b class="font-semibold text-zinc-900">2.9</b> h</span>
+            </div>
+            <div class="mt-2 flex items-center gap-1">
+              <img src="capsule/media/thumb/aa62ab845af5394ff284.webp" loading="lazy" alt="" class="h-10 w-10 shrink-0 rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/5e4108081546744f1b5d.webp" loading="lazy" alt="" class="h-10 w-10 shrink-0 rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/656193a8812d2108fd40.webp" loading="lazy" alt="" class="h-10 w-10 shrink-0 rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/1eb434b1c9443d11cae9.webp" loading="lazy" alt="" class="h-10 w-10 shrink-0 rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/ad84d2399c3a81e267bc.webp" loading="lazy" alt="" class="h-10 w-10 shrink-0 rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/666f6599f21f4cfd94c7.webp" loading="lazy" alt="" class="h-10 w-10 shrink-0 rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/7e15369e51757557b52f.webp" loading="lazy" alt="" class="h-10 w-10 shrink-0 rounded object-cover ring-1 ring-black/5">
+              <span class="ml-1 text-[11px] text-zinc-400">+78</span>
+            </div>
+            </div>
+          </div>
+        </li>
+        <li class="rounded-xl border bg-white p-3 shadow-sm border-zinc-200 hover:border-zinc-300">
+          <div class="flex gap-2.5">
+            <div class="w-11 shrink-0 pt-0.5 text-right">
+              <span class="font-mono text-xs font-medium tabular-nums text-zinc-900">
+                15:48</span>
+            </div>
+            <div class="flex w-3 shrink-0 justify-center pt-1">
+              <span class="h-2 w-2 rounded-full bg-sky-300"></span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-2">
+                <span class="truncate text-sm font-semibold text-zinc-900">Carrick Cottage Cafe</span>
+                
+              </div>
+              <div class="mt-0.5 flex items-center gap-1.5 text-[11px] text-zinc-500">
+                <span class="capitalize">&#127963; visit</span>
+                <span class="text-zinc-300">&middot;</span><span>89 min</span>
+                
+              </div>
+              
+            </div>
+          </div>
+        </li>
+        <li class="rounded-xl border bg-white p-3 shadow-sm border-zinc-200 hover:border-zinc-300">
+          <div class="flex gap-2.5">
+            <div class="w-11 shrink-0 pt-0.5 text-right">
+              <span class="font-mono text-xs font-medium tabular-nums text-zinc-900">
+                17:30</span>
+            </div>
+            <div class="flex w-3 shrink-0 justify-center pt-1">
+              <span class="h-2 w-2 rounded-full bg-zinc-300"></span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-2">
+                <span class="truncate text-sm font-semibold text-zinc-900">Quarter Road Filling Station → Nerwcastle Beach Bouldering</span>
+                
+              </div>
+              <div class="mt-0.5 flex items-center gap-1.5 text-[11px] text-zinc-500">
+                <span class="capitalize">&#128663; drive</span>
+                <span class="text-zinc-300">&middot;</span><span>12 min</span>
+                
+              </div>
+              
+            </div>
+          </div>
+        </li>
+        <li class="rounded-xl border bg-white p-3 shadow-sm border-zinc-200 hover:border-zinc-300">
+          <div class="flex gap-2.5">
+            <div class="w-11 shrink-0 pt-0.5 text-right">
+              <span class="font-mono text-xs font-medium tabular-nums text-zinc-900">
+                17:43</span>
+            </div>
+            <div class="flex w-3 shrink-0 justify-center pt-1">
+              <span class="h-2 w-2 rounded-full bg-sky-300"></span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-2">
+                <span class="truncate text-sm font-semibold text-zinc-900">Nerwcastle Beach Bouldering</span>
+                <span class="shrink-0 rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500">confirm?</span>
+              </div>
+              <div class="mt-0.5 flex items-center gap-1.5 text-[11px] text-zinc-500">
+                <span class="capitalize">&#127963; visit</span>
+                <span class="text-zinc-300">&middot;</span><span>26 min</span>
+                <span class="text-zinc-300">&middot;</span><span>3 ph</span>
+              </div>
+              
+            <div class="mt-2 flex items-center gap-1">
+              <img src="capsule/media/thumb/c24c2882d0bbe41ce825.webp" loading="lazy" alt="" class="h-10 w-10 shrink-0 rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/e4063a95bf05255a12ef.webp" loading="lazy" alt="" class="h-10 w-10 shrink-0 rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/5e5a83375d0b0a808f4a.webp" loading="lazy" alt="" class="h-10 w-10 shrink-0 rounded object-cover ring-1 ring-black/5">
+              
+            </div>
+            </div>
+          </div>
+        </li>
+        <li class="rounded-xl border bg-white p-3 shadow-sm border-zinc-200 hover:border-zinc-300">
+          <div class="flex gap-2.5">
+            <div class="w-11 shrink-0 pt-0.5 text-right">
+              <span class="font-mono text-xs font-medium tabular-nums text-zinc-900">
+                18:09</span>
+            </div>
+            <div class="flex w-3 shrink-0 justify-center pt-1">
+              <span class="h-2 w-2 rounded-full bg-zinc-300"></span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-2">
+                <span class="truncate text-sm font-semibold text-zinc-900">Nerwcastle Beach Bouldering → The Flatiron Belfast</span>
+                
+              </div>
+              <div class="mt-0.5 flex items-center gap-1.5 text-[11px] text-zinc-500">
+                <span class="capitalize">&#128663; drive</span>
+                <span class="text-zinc-300">&middot;</span><span>52 min</span>
+                
+              </div>
+              
+            </div>
+          </div>
+        </li>
+        <li class="rounded-xl border bg-white p-3 shadow-sm border-zinc-200 hover:border-zinc-300">
+          <div class="flex gap-2.5">
+            <div class="w-11 shrink-0 pt-0.5 text-right">
+              <span class="font-mono text-xs font-medium tabular-nums text-zinc-900">
+                19:01</span>
+            </div>
+            <div class="flex w-3 shrink-0 justify-center pt-1">
+              <span class="h-2 w-2 rounded-full bg-sky-300"></span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-2">
+                <span class="truncate text-sm font-semibold text-zinc-900">The Flatiron Belfast</span>
+                <span class="shrink-0 rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500">confirm?</span>
+              </div>
+              <div class="mt-0.5 flex items-center gap-1.5 text-[11px] text-zinc-500">
+                <span class="capitalize">&#127963; visit</span>
+                <span class="text-zinc-300">&middot;</span><span>26 min</span>
+                
+              </div>
+              
+            </div>
+          </div>
+        </li>
+        <li class="rounded-xl border bg-white p-3 shadow-sm border-zinc-200 hover:border-zinc-300">
+          <div class="flex gap-2.5">
+            <div class="w-11 shrink-0 pt-0.5 text-right">
+              <span class="font-mono text-xs font-medium tabular-nums text-zinc-900">
+                19:27</span>
+            </div>
+            <div class="flex w-3 shrink-0 justify-center pt-1">
+              <span class="h-2 w-2 rounded-full bg-teal-300"></span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-2">
+                <span class="truncate text-sm font-semibold text-zinc-900">Francis Calder Commemorative Fountain</span>
+                <span class="shrink-0 rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500">confirm?</span>
+              </div>
+              <div class="mt-0.5 flex items-center gap-1.5 text-[11px] text-zinc-500">
+                <span class="capitalize">&#128694; walk</span>
+                <span class="text-zinc-300">&middot;</span><span>27 min</span>
+                <span class="text-zinc-300">&middot;</span><span>3 ph</span>
+              </div>
+              
+            <div class="mt-2 flex items-center gap-1">
+              <img src="capsule/media/thumb/107824ce827557756998.webp" loading="lazy" alt="" class="h-10 w-10 shrink-0 rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/9eb86de6d265d8215917.webp" loading="lazy" alt="" class="h-10 w-10 shrink-0 rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/cfb85d3e84905ccb273b.webp" loading="lazy" alt="" class="h-10 w-10 shrink-0 rounded object-cover ring-1 ring-black/5">
+              
+            </div>
+            </div>
+          </div>
+        </li>
+        <li class="rounded-xl border bg-white p-3 shadow-sm border-zinc-200 hover:border-zinc-300">
+          <div class="flex gap-2.5">
+            <div class="w-11 shrink-0 pt-0.5 text-right">
+              <span class="font-mono text-xs font-medium tabular-nums text-zinc-900">
+                19:55</span>
+            </div>
+            <div class="flex w-3 shrink-0 justify-center pt-1">
+              <span class="h-2 w-2 rounded-full bg-violet-300"></span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-2">
+                <span class="truncate text-sm font-semibold text-zinc-900">The Foundry</span>
+                <span class="shrink-0 rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500">confirm?</span>
+              </div>
+              <div class="mt-0.5 flex items-center gap-1.5 text-[11px] text-zinc-500">
+                <span class="capitalize">&#127749; overnight</span>
+                <span class="text-zinc-300">&middot;</span><span>10.5 h</span>
+                <span class="text-zinc-300">&middot;</span><span>13 ph</span>
+              </div>
+              
+            <div class="mt-2 flex items-center gap-1">
+              <img src="capsule/media/thumb/5b6f3ae9d8f4e1c07c58.webp" loading="lazy" alt="" class="h-10 w-10 shrink-0 rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/a0752c5daa99c30a4760.webp" loading="lazy" alt="" class="h-10 w-10 shrink-0 rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/aed70ecb4efee0f6ed1d.webp" loading="lazy" alt="" class="h-10 w-10 shrink-0 rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/a43177d7679d44c80eff.webp" loading="lazy" alt="" class="h-10 w-10 shrink-0 rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/dc79ab31be6e8554f20e.webp" loading="lazy" alt="" class="h-10 w-10 shrink-0 rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/26039223643c6b5fac92.webp" loading="lazy" alt="" class="h-10 w-10 shrink-0 rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/016428af56d2bc77a233.webp" loading="lazy" alt="" class="h-10 w-10 shrink-0 rounded object-cover ring-1 ring-black/5">
+              <span class="ml-1 text-[11px] text-zinc-400">+6</span>
+            </div>
+            </div>
+          </div>
+        </li>
+        </ol>
+        <button class="mt-3 flex w-full items-center justify-center rounded-lg border
+             border-dashed border-zinc-300 py-2 text-xs font-medium text-zinc-500
+             hover:border-zinc-400 hover:text-zinc-700">
+             Show 3 hidden minor stops</button>
+      </div>
+      <div class="shrink-0 border-t border-zinc-200 bg-white px-4 py-2.5">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] text-zinc-500">
+            <span class="font-semibold text-zinc-900">Unassigned</span> &middot; 0 photos
+          </span>
+          <button class="rounded-lg border border-zinc-300 px-2.5 py-1 text-[11px]
+                         font-medium text-zinc-700 hover:bg-zinc-50">Find nearby&hellip;</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- map: persistent, full height -->
+    <section class="relative min-w-0 flex-1 bg-zinc-200">
+      
+      <div class="absolute inset-0 bg-[radial-gradient(circle_at_35%_45%,theme(colors.emerald.50),theme(colors.zinc.200))]"></div>
+      <svg class="absolute inset-0 h-full w-full" viewBox="0 0 560 420" preserveAspectRatio="xMidYMid slice">
+        <g opacity="0.35" stroke="rgb(161 161 170)" stroke-width="1">
+          <path d="M0 150 H560 M0 260 H560 M170 0 V420 M390 0 V420" fill="none"/>
+        </g>
+        
+          <path d="M70 320 C 150 300, 180 230, 250 200 S 380 140, 460 90" fill="none" stroke="white" stroke-width="7" stroke-linecap="round"
+                opacity="0.85"/>
+          <path d="M70 320 C 150 300, 180 230, 250 200 S 380 140, 460 90" fill="none" stroke="rgb(5 150 105)" stroke-width="3.5"
+                stroke-linecap="round"/>
+          <circle cx="70" cy="320" r="7" fill="white" stroke="rgb(5 150 105)" stroke-width="3"/>
+          <circle cx="460" cy="90" r="7" fill="rgb(5 150 105)" stroke="white" stroke-width="3"/><circle cx="252" cy="304" r="8" fill="rgb(99 102 241)" stroke="white" stroke-width="2.5" opacity="0.95"/><circle cx="323" cy="141" r="8" fill="rgb(99 102 241)" stroke="white" stroke-width="2.5" opacity="0.95"/><circle cx="136" cy="172" r="8" fill="rgb(99 102 241)" stroke="white" stroke-width="2.5" opacity="0.95"/><circle cx="349" cy="203" r="8" fill="rgb(99 102 241)" stroke="white" stroke-width="2.5" opacity="0.95"/><circle cx="420" cy="300" r="8" fill="rgb(99 102 241)" stroke="white" stroke-width="2.5" opacity="0.95"/>
+      </svg>
+
+      <div class="absolute left-4 top-4 flex gap-1 rounded-lg bg-white/95 p-1 shadow-lg
+                  ring-1 ring-black/5">
+        <button class="rounded bg-zinc-900 px-3 py-1.5 text-[11px] font-medium text-white">
+          Street</button>
+        <button class="rounded px-3 py-1.5 text-[11px] font-medium text-zinc-600
+                       hover:bg-zinc-100">Satellite</button>
+      </div>
+
+      <div class="absolute right-4 top-4 flex flex-col gap-1 rounded-lg bg-white/95 p-1
+                  shadow-lg ring-1 ring-black/5">
+        <button class="h-7 w-7 rounded text-sm text-zinc-600 hover:bg-zinc-100">+</button>
+        <button class="h-7 w-7 rounded text-sm text-zinc-600 hover:bg-zinc-100">&minus;</button>
+      </div>
+
+      <div class="absolute bottom-4 left-4 rounded-lg bg-white/95 px-3 py-2 text-[11px]
+                  text-zinc-600 shadow-lg ring-1 ring-black/5">
+        County Down Hiking &middot; 12.0 km
+      </div>
+      <div class="absolute bottom-4 right-4 rounded bg-white/90 px-2 py-1 text-[10px]
+                  text-zinc-500">&copy; OpenStreetMap</div>
+    </section>
+
+    <!-- inspector -->
+    <aside class="flex w-[340px] shrink-0 flex-col border-l border-zinc-200 bg-white">
+      
+      <div class="min-h-0 flex-1 overflow-y-auto">
+        <div class="px-4 py-3">
+          <input value="County Down Hiking"
+                 class="w-full border-0 border-b border-transparent bg-transparent p-0
+                        text-sm font-semibold text-zinc-900 focus:border-indigo-500
+                        focus:outline-none focus:ring-0">
+          <p class="mt-1 text-[11px] text-zinc-500">
+            
+          </p>
+          <div class="mt-3">
+            <span class="text-[11px] font-medium text-zinc-500">Type</span>
+            <div class="mt-1.5 flex flex-wrap gap-1"><button class="rounded-md px-2 py-1 text-[11px] font-medium bg-zinc-100 text-zinc-600 hover:bg-zinc-200">&#128663; drive</button><button class="rounded-md px-2 py-1 text-[11px] font-medium bg-zinc-100 text-zinc-600 hover:bg-zinc-200">&#128205; stop</button><button class="rounded-md px-2 py-1 text-[11px] font-medium bg-zinc-100 text-zinc-600 hover:bg-zinc-200">&#127963; visit</button><button class="rounded-md px-2 py-1 text-[11px] font-medium bg-zinc-100 text-zinc-600 hover:bg-zinc-200">&#127749; overnight</button><button class="rounded-md px-2 py-1 text-[11px] font-medium bg-zinc-900 text-white">&#9968; hike</button><button class="rounded-md px-2 py-1 text-[11px] font-medium bg-zinc-100 text-zinc-600 hover:bg-zinc-200">&#128694; walk</button><button class="rounded-md px-2 py-1 text-[11px] font-medium bg-zinc-100 text-zinc-600 hover:bg-zinc-200">&#128690; bike</button><button class="rounded-md px-2 py-1 text-[11px] font-medium bg-zinc-100 text-zinc-600 hover:bg-zinc-200">&#9992; flight</button><button class="rounded-md px-2 py-1 text-[11px] font-medium bg-zinc-100 text-zinc-600 hover:bg-zinc-200">&#9973; ferry</button></div>
+          </div>
+          <label class="mt-3 block">
+            <span class="text-[11px] font-medium text-zinc-500">Your note</span>
+            <textarea rows="2" placeholder="Hail at the summit&hellip;"
+                      class="mt-1.5 block w-full rounded-lg border-zinc-300 text-xs
+                             focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+          </label>
+        </div>
+        
+        <div class="border-t border-zinc-200 px-4 py-3">
+          <div class="flex items-baseline justify-between">
+            <h4 class="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+              Elevation</h4>
+            <span class="text-[10px] text-zinc-400">
+              gain above 4 m steps</span>
+          </div>
+          <svg viewBox="0 0 100 40" preserveAspectRatio="none" class="mt-2 h-20 w-full">
+            <polygon points="0,40 0.0,36.9 1.4,36.5 2.8,36.1 4.2,35.6 5.6,35.1 7.0,34.5 8.5,33.8 9.9,33.2 11.3,32.4 12.7,31.7 14.1,30.9 15.5,30.1 16.9,29.2 18.3,28.3 19.7,27.4 21.1,26.5 22.5,25.5 23.9,24.6 25.4,23.6 26.8,22.6 28.2,21.7 29.6,20.7 31.0,19.7 32.4,18.7 33.8,17.8 35.2,16.9 36.6,15.9 38.0,15.1 39.4,14.2 40.8,13.3 42.3,12.5 43.7,11.8 45.1,11.0 46.5,10.3 47.9,9.7 49.3,9.1 50.7,8.5 52.1,8.0 53.5,7.6 54.9,7.2 56.3,6.8 57.7,6.6 59.2,6.3 60.6,6.2 62.0,6.1 63.4,6.0 64.8,6.0 66.2,6.1 67.6,6.2 69.0,6.4 70.4,6.6 71.8,6.9 73.2,7.3 74.6,7.7 76.1,8.2 77.5,8.7 78.9,9.3 80.3,9.9 81.7,10.5 83.1,11.2 84.5,12.0 85.9,12.8 87.3,13.6 88.7,14.4 90.1,15.3 91.5,16.2 93.0,17.1 94.4,18.1 95.8,19.0 97.2,20.0 98.6,21.0 100.0,21.9 100,40" fill="rgb(5 150 105)" opacity="0.12"/>
+            <polyline points="0.0,36.9 1.4,36.5 2.8,36.1 4.2,35.6 5.6,35.1 7.0,34.5 8.5,33.8 9.9,33.2 11.3,32.4 12.7,31.7 14.1,30.9 15.5,30.1 16.9,29.2 18.3,28.3 19.7,27.4 21.1,26.5 22.5,25.5 23.9,24.6 25.4,23.6 26.8,22.6 28.2,21.7 29.6,20.7 31.0,19.7 32.4,18.7 33.8,17.8 35.2,16.9 36.6,15.9 38.0,15.1 39.4,14.2 40.8,13.3 42.3,12.5 43.7,11.8 45.1,11.0 46.5,10.3 47.9,9.7 49.3,9.1 50.7,8.5 52.1,8.0 53.5,7.6 54.9,7.2 56.3,6.8 57.7,6.6 59.2,6.3 60.6,6.2 62.0,6.1 63.4,6.0 64.8,6.0 66.2,6.1 67.6,6.2 69.0,6.4 70.4,6.6 71.8,6.9 73.2,7.3 74.6,7.7 76.1,8.2 77.5,8.7 78.9,9.3 80.3,9.9 81.7,10.5 83.1,11.2 84.5,12.0 85.9,12.8 87.3,13.6 88.7,14.4 90.1,15.3 91.5,16.2 93.0,17.1 94.4,18.1 95.8,19.0 97.2,20.0 98.6,21.0 100.0,21.9" fill="none" stroke="rgb(5 150 105)" stroke-width="1.2"
+                      vector-effect="non-scaling-stroke"/>
+            <line x1="46" y1="0" x2="46" y2="40" stroke="rgb(99 102 241)" stroke-width="0.6"
+                  vector-effect="non-scaling-stroke"/>
+          </svg>
+          <div class="flex justify-between text-[10px] tabular-nums text-zinc-400">
+            <span>0 km</span>
+            <span class="font-medium text-zinc-700">741 m max</span>
+            <span>12.0 km</span>
+          </div>
+        </div>
+        <div class="border-t border-zinc-200 px-4 py-3">
+          <div class="flex items-baseline justify-between">
+            <h4 class="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+              Photos</h4>
+            <span class="text-[10px] text-zinc-400">77 attached</span>
+          </div>
+          <div class="mt-2 grid grid-cols-4 gap-1"><img src="capsule/media/thumb/aa62ab845af5394ff284.webp" loading="lazy" alt="" class="aspect-square w-full rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/5e4108081546744f1b5d.webp" loading="lazy" alt="" class="aspect-square w-full rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/656193a8812d2108fd40.webp" loading="lazy" alt="" class="aspect-square w-full rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/1eb434b1c9443d11cae9.webp" loading="lazy" alt="" class="aspect-square w-full rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/ad84d2399c3a81e267bc.webp" loading="lazy" alt="" class="aspect-square w-full rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/666f6599f21f4cfd94c7.webp" loading="lazy" alt="" class="aspect-square w-full rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/7e15369e51757557b52f.webp" loading="lazy" alt="" class="aspect-square w-full rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/b38ca916ad91edb71d26.webp" loading="lazy" alt="" class="aspect-square w-full rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/4cce030f9d354a37f5d3.webp" loading="lazy" alt="" class="aspect-square w-full rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/c7cf6b51de04c518805c.webp" loading="lazy" alt="" class="aspect-square w-full rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/12b57243dd3aa0b7f842.webp" loading="lazy" alt="" class="aspect-square w-full rounded object-cover ring-1 ring-black/5"><img src="capsule/media/thumb/1cfcf2ac86bdc402b0e9.webp" loading="lazy" alt="" class="aspect-square w-full rounded object-cover ring-1 ring-black/5"></div>
+          <button class="mt-2 w-full rounded-lg border border-zinc-300 py-1.5 text-[11px]
+                         font-medium text-zinc-700 hover:bg-zinc-50">Move to&hellip;</button>
+        </div>
+        <div class="border-t border-zinc-200 px-4 py-3">
+          <h4 class="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+            Why is this here?</h4>
+          <ul class="mt-2 space-y-1 text-[11px] leading-relaxed text-zinc-500"><li class="flex gap-1.5"><span class="text-zinc-300">&mdash;</span><span>GPX track (absolute precedence, ADR-0004)</span></li></ul>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<div class="fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-full bg-zinc-900/90 px-4 py-2
+            text-xs text-zinc-300 shadow-lg ring-1 ring-white/10">
+  <span class="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+  Prototype &middot; real Ireland 2023 data
+  <span class="text-zinc-500">|</span>
+  <a class="underline hover:text-white" href="index.html">index</a>
+</div>
+</body></html>

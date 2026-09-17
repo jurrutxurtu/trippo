@@ -23,6 +23,7 @@ dist/
 .trippo-cache/
 geocode-cache.sqlite*
 scratch/
+prototypes/capsule/
 out/
 
 # OS
