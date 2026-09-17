@@ -103,3 +103,25 @@ Failing events are `suppressed` with a reason, **never deleted**.
 The containment test is not redundant: it is the one that catches the reference phantom, because
 the mid-Atlantic breadcrumb precedes the visit's own end timestamp and leaves the exit test with a
 non-positive interval (P14).
+## Enrichment and ranking
+
+See `docs/technical/enrichment.md` for the evidence behind each of these.
+
+| Constant | Value | Rationale |
+|---|---|---|
+| `GEOCODE_RADIUS_MIN_M` / `MAX_M` | 80 / 400 | Scales with visit duration: a 15 min stop looks 80 m out, a 3 h visit 400 m. Widened further for weakly-placed events. |
+| `GEOCODE_CACHE_PRECISION` | 4 | ~11 m grid. Finer would defeat caching; coarser would merge distinct POIs. |
+| `FETCH_BATCH` / `OVERPASS_BATCH_SIZE` | 6 | Measured ceiling on the public Overpass instance for nodes-only queries. Larger returns 504. |
+| `OVERPASS_TIMEOUT_S` | 60 | The server-side timeout declared in the query, matched by the client. |
+| `NOMINATIM_MIN_INTERVAL_S` | 1.0 | Usage policy. Enforced in-process rather than trusted to callers. |
+| `TRACK_SAMPLE_POINTS` | 6 | Points sampled along an activity track. Enough to find the summit and the lake; few enough to stay inside one batch. |
+| `RANK_W_TYPE` | 1.0 | Tag affinity dominates: a campsite for an overnight, a peak for a hike. |
+| `RANK_W_DISTANCE` | 0.7 | Strong but subordinate to type. Tolerance widens when the query point itself is uncertain. |
+| `RANK_W_DURATION` | 0.3 | A three-hour stop is not a roadside memorial. |
+| `RANK_W_NOTABLE` | 0.35 | A wikidata/heritage tag separates a destination from a plaque. Decisive in dense cities. |
+| `RANK_GENERIC_PENALTY` | 0.4 | "Car Park", "Church", "Beach" — correct and useless. |
+| `RANK_ADMIN_PENALTY` | 0.8 | "Centre Ward No. 5" is filing, not a place. Large because these are never right. |
+| `RANK_REPEAT_PENALTY` | 0.5 | Stops the same monument winning four consecutive city-centre stops. |
+| `RANK_REPEAT_WINDOW` | 4 | How many preceding events count as "nearby" for that penalty. |
+| `RANK_MIN_CLEAR_MARGIN` | 0.15 | Below this the pick is **contested** — the hook for the E4 LLM tiebreak. |
+| `PLACE_CONFIDENCE_CLEAR` / `CONTESTED` | 0.9 / 0.6 | Recorded on the place so the UI can show how sure Trippo is. |

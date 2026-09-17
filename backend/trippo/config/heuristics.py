@@ -63,7 +63,37 @@ WEB_PX: Final = 1_600
 GEOCODE_RADIUS_MIN_M: Final = 80.0
 GEOCODE_RADIUS_MAX_M: Final = 400.0
 GEOCODE_CACHE_PRECISION: Final = 4
+
+NOMINATIM_URL: Final = "https://nominatim.openstreetmap.org/reverse"
 NOMINATIM_MIN_INTERVAL_S: Final = 1.0
+
+OVERPASS_ENDPOINTS: Final = (
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+)
+OVERPASS_BATCH_SIZE: Final = 6
+#: Query points sent to a provider per request during enrichment.
+FETCH_BATCH: Final = 6
+OVERPASS_TIMEOUT_S: Final = 60
+OVERPASS_MAX_FEATURES: Final = 200
+
+#: Points sampled along an activity track when looking for summits and lakes.
+TRACK_SAMPLE_POINTS: Final = 6
+
+# --------------------------------------------------------------------------- ranking
+RANK_W_TYPE: Final = 1.0
+RANK_W_DISTANCE: Final = 0.7
+RANK_W_DURATION: Final = 0.3
+RANK_GENERIC_PENALTY: Final = 0.4
+RANK_ADMIN_PENALTY: Final = 0.8
+RANK_W_NOTABLE: Final = 0.35
+RANK_REPEAT_PENALTY: Final = 0.5
+#: How many neighbouring events count as "nearby" for the repetition penalty.
+RANK_REPEAT_WINDOW: Final = 4
+RANK_MIN_CLEAR_MARGIN: Final = 0.15
+
+PLACE_CONFIDENCE_CLEAR: Final = 0.9
+PLACE_CONFIDENCE_CONTESTED: Final = 0.6
 
 # --------------------------------------------------------------------------- confidence
 CONFIDENCE_TIMELINE_MOVE: Final = 0.6

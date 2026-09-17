@@ -9,6 +9,7 @@ Every source is optional (ADR-0005). A trip can be built from photos alone.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import sys
 from datetime import UTC, date, datetime, time, timedelta
@@ -181,6 +182,10 @@ def cmd_build(args: argparse.Namespace) -> int:
     )
     trip.sources = sources
 
+    # ---------------------------------------------------------------- enrich
+    if args.enrich:
+        _enrich(trip, args)
+
     _print_summary(trip, trace, reports)
 
     if args.out:
@@ -195,6 +200,49 @@ def cmd_build(args: argparse.Namespace) -> int:
             )
         print(f"\n[capsule]  written to {out.resolve()}")
     return 0
+
+
+def _enrich(trip, args: argparse.Namespace) -> None:
+    """Resolve place names. Never fatal -- providers are public and best-effort."""
+    from trippo.domain.stats import compute_trip_stats
+    from trippo.enrich.cache import GeocodeCache
+    from trippo.enrich.label import enrich_trip
+    from trippo.enrich.nominatim import NominatimGeocoder
+    from trippo.enrich.overpass import OverpassGeocoder
+
+    cache = GeocodeCache(Path(args.cache) if args.cache else None)
+    if args.offline:
+        # Cache-only: resolves whatever has been seen before, asks nothing of the network.
+        providers: list = [_CacheOnly("overpass"), _CacheOnly("nominatim")]
+        deep = None
+        print("[enrich]   offline: using cached results only")
+    else:
+        overpass = OverpassGeocoder()
+        providers = [overpass, NominatimGeocoder()]
+        deep = overpass.lookup_single_deep
+        print("[enrich]   resolving place names (Overpass -> Nominatim) ...", flush=True)
+
+    def progress(done: int, total: int, label: str) -> None:
+        print(f"           {done}/{total}  {label:<20}", flush=True, end="\r")
+
+    report = enrich_trip(trip, providers, cache, deep_lookup=deep, progress=progress)
+    cache.close()
+    print(" " * 60, end="\r")
+    print(f"[enrich]   {report.summary()}")
+    for d in report.degradations:
+        print(f"           ! {d}")
+    trip.stats = compute_trip_stats(trip)
+
+
+class _CacheOnly:
+    """A provider that never leaves the machine. Used by --offline and by tests."""
+
+    def __init__(self, name: str) -> None:
+        self.name = name
+        self.failures = 0
+
+    def lookup(self, queries):
+        return {i: [] for i in range(len(queries))}
 
 
 def _print_summary(trip, trace, reports: list[IngestionReport]) -> None:
@@ -277,7 +325,22 @@ def _print_summary(trip, trace, reports: list[IngestionReport]) -> None:
             print(f"   {mark} {local_start:%H:%M}  {e.type.value:<9} {label[:44]:<44}{extra}")
 
 
+def _force_utf8_stdout() -> None:
+    """Windows consoles still default to cp1252, which cannot print an arrow.
+
+    Place names are arbitrary Unicode -- Irish, Basque, accented French -- so the CLI
+    must never die on output. Reconfigure where possible, and replace what cannot be
+    encoded rather than raising.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            with contextlib.suppress(ValueError, OSError):
+                reconfigure(encoding="utf-8", errors="replace")
+
+
 def main(argv: list[str] | None = None) -> int:
+    _force_utf8_stdout()
     p = argparse.ArgumentParser(prog="trippo", description="Trippo travel memory studio")
     sub = p.add_subparsers(dest="command", required=True)
 
@@ -290,6 +353,13 @@ def main(argv: list[str] | None = None) -> int:
     b.add_argument("--title", default="Untitled trip")
     b.add_argument("--default-offset", type=int, default=0, help="fallback UTC offset, minutes")
     b.add_argument("--out", help="capsule directory to write")
+    b.add_argument(
+        "--enrich", action="store_true", help="resolve place names (Overpass -> Nominatim)"
+    )
+    b.add_argument(
+        "--offline", action="store_true", help="enrich from the cache only; no network"
+    )
+    b.add_argument("--cache", help="geocode cache path (default ~/.trippo/)")
     b.set_defaults(func=cmd_build)
 
     args = p.parse_args(argv)
