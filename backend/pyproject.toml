@@ -1,0 +1,52 @@
+[project]
+name = "trippo"
+version = "0.1.0"
+description = "Trippo - intelligent travel memory studio (local-first)"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.9",
+    "orjson>=3.10",
+    "gpxpy>=1.6",
+    "Pillow>=11.0",
+    "pillow-heif>=0.20",
+    "httpx>=0.27",
+    "timezonefinder>=6.5",
+    "python-dateutil>=2.9",
+]
+
+[project.optional-dependencies]
+ai = ["google-genai>=0.3"]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "syrupy>=4.8",
+    "ruff>=0.7",
+    "mypy>=1.13",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["trippo"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+ignore = ["B008", "RUF012"]
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["pydantic.mypy"]
+ignore_missing_imports = true
+warn_unused_ignores = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

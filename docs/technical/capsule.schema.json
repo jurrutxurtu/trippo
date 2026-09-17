@@ -1,0 +1,1870 @@
+{
+  "$defs": {
+    "AbsorbedRef": {
+      "additionalProperties": false,
+      "description": "A segment this event swallowed -- a phantom visit (P1) or a duplicate (P4).",
+      "properties": {
+        "ref": {
+          "title": "Ref",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "start": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Start"
+        },
+        "end": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "End"
+        }
+      },
+      "required": [
+        "ref",
+        "reason"
+      ],
+      "title": "AbsorbedRef",
+      "type": "object"
+    },
+    "ActivityDetail": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "activity",
+          "default": "activity",
+          "title": "Kind",
+          "type": "string"
+        },
+        "stats": {
+          "$ref": "#/$defs/ActivityStats"
+        },
+        "activity_type_hint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Activity Type Hint"
+        }
+      },
+      "title": "ActivityDetail",
+      "type": "object"
+    },
+    "ActivityStats": {
+      "additionalProperties": false,
+      "description": "Telemetry. Lives ONLY on track-bearing activity events -- never on a trip.\n\nAscent and descent use ELEVATION_THRESHOLD_M; without it GPS noise reports\n+1,400 m on a flat ride.",
+      "properties": {
+        "distance_m": {
+          "default": 0.0,
+          "title": "Distance M",
+          "type": "number"
+        },
+        "ascent_m": {
+          "default": 0.0,
+          "title": "Ascent M",
+          "type": "number"
+        },
+        "descent_m": {
+          "default": 0.0,
+          "title": "Descent M",
+          "type": "number"
+        },
+        "max_ele_m": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Ele M"
+        },
+        "min_ele_m": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min Ele M"
+        },
+        "moving_time_s": {
+          "default": 0.0,
+          "title": "Moving Time S",
+          "type": "number"
+        },
+        "elapsed_time_s": {
+          "default": 0.0,
+          "title": "Elapsed Time S",
+          "type": "number"
+        },
+        "avg_hr": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Avg Hr"
+        },
+        "max_hr": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Hr"
+        },
+        "elevation_threshold_m": {
+          "default": 0.0,
+          "title": "Elevation Threshold M",
+          "type": "number"
+        }
+      },
+      "title": "ActivityStats",
+      "type": "object"
+    },
+    "DateRange": {
+      "additionalProperties": false,
+      "properties": {
+        "start": {
+          "format": "date",
+          "title": "Start",
+          "type": "string"
+        },
+        "end": {
+          "format": "date",
+          "title": "End",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "DateRange",
+      "type": "object"
+    },
+    "Day": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "index": {
+          "title": "Index",
+          "type": "integer"
+        },
+        "date": {
+          "format": "date",
+          "title": "Date",
+          "type": "string"
+        },
+        "timezone": {
+          "default": "UTC",
+          "title": "Timezone",
+          "type": "string"
+        },
+        "excluded": {
+          "default": false,
+          "title": "Excluded",
+          "type": "boolean"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "subtitle": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Subtitle"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        },
+        "event_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Event Ids",
+          "type": "array"
+        },
+        "spanning_event_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Spanning Event Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "index",
+        "date"
+      ],
+      "title": "Day",
+      "type": "object"
+    },
+    "DayCoverage": {
+      "additionalProperties": false,
+      "properties": {
+        "date": {
+          "format": "date",
+          "title": "Date",
+          "type": "string"
+        },
+        "timeline_records": {
+          "default": 0,
+          "title": "Timeline Records",
+          "type": "integer"
+        },
+        "media_count": {
+          "default": 0,
+          "title": "Media Count",
+          "type": "integer"
+        },
+        "track_count": {
+          "default": 0,
+          "title": "Track Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "date"
+      ],
+      "title": "DayCoverage",
+      "type": "object"
+    },
+    "Event": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "day_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Day Id"
+        },
+        "type": {
+          "$ref": "#/$defs/EventType"
+        },
+        "status": {
+          "$ref": "#/$defs/EventStatus",
+          "default": "active"
+        },
+        "suppress_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Suppress Reason"
+        },
+        "start": {
+          "format": "date-time",
+          "title": "Start",
+          "type": "string"
+        },
+        "end": {
+          "format": "date-time",
+          "title": "End",
+          "type": "string"
+        },
+        "timezone": {
+          "default": "UTC",
+          "title": "Timezone",
+          "type": "string"
+        },
+        "utc_offset_minutes": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Utc Offset Minutes"
+        },
+        "continues_to_next_day": {
+          "default": false,
+          "title": "Continues To Next Day",
+          "type": "boolean"
+        },
+        "place": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Place"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "geometry": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Geometry"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "media_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Media Ids",
+          "type": "array"
+        },
+        "track_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Track Ids",
+          "type": "array"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "user_edited": {
+          "default": false,
+          "title": "User Edited",
+          "type": "boolean"
+        },
+        "user_pinned": {
+          "default": false,
+          "title": "User Pinned",
+          "type": "boolean"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        },
+        "detail": {
+          "discriminator": {
+            "mapping": {
+              "activity": "#/$defs/ActivityDetail",
+              "ferry": "#/$defs/FerryDetail",
+              "flight": "#/$defs/FlightDetail",
+              "place": "#/$defs/PlaceDetail",
+              "transit": "#/$defs/TransitDetail",
+              "unknown": "#/$defs/UnknownDetail"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/TransitDetail"
+            },
+            {
+              "$ref": "#/$defs/FerryDetail"
+            },
+            {
+              "$ref": "#/$defs/FlightDetail"
+            },
+            {
+              "$ref": "#/$defs/ActivityDetail"
+            },
+            {
+              "$ref": "#/$defs/PlaceDetail"
+            },
+            {
+              "$ref": "#/$defs/UnknownDetail"
+            }
+          ],
+          "title": "Detail"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "start",
+        "end",
+        "detail"
+      ],
+      "title": "Event",
+      "type": "object"
+    },
+    "EventStatus": {
+      "enum": [
+        "active",
+        "suppressed"
+      ],
+      "title": "EventStatus",
+      "type": "string"
+    },
+    "EventType": {
+      "enum": [
+        "drive",
+        "stop",
+        "visit",
+        "overnight",
+        "hike",
+        "walk",
+        "bike",
+        "flight",
+        "ferry",
+        "unknown"
+      ],
+      "title": "EventType",
+      "type": "string"
+    },
+    "FerryDetail": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "ferry",
+          "default": "ferry",
+          "title": "Kind",
+          "type": "string"
+        },
+        "distance_m": {
+          "default": 0.0,
+          "title": "Distance M",
+          "type": "number"
+        },
+        "duration_s": {
+          "default": 0.0,
+          "title": "Duration S",
+          "type": "number"
+        },
+        "geometry_reliability": {
+          "$ref": "#/$defs/GeometryReliability",
+          "default": "sparse"
+        },
+        "operator": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Operator"
+        },
+        "from_port": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "From Port"
+        },
+        "to_port": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "To Port"
+        }
+      },
+      "title": "FerryDetail",
+      "type": "object"
+    },
+    "FlightDetail": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "flight",
+          "default": "flight",
+          "title": "Kind",
+          "type": "string"
+        },
+        "distance_m": {
+          "default": 0.0,
+          "title": "Distance M",
+          "type": "number"
+        },
+        "duration_s": {
+          "default": 0.0,
+          "title": "Duration S",
+          "type": "number"
+        },
+        "geometry_reliability": {
+          "$ref": "#/$defs/GeometryReliability",
+          "default": "assumed"
+        },
+        "segments": {
+          "items": {
+            "$ref": "#/$defs/FlightSegment"
+          },
+          "title": "Segments",
+          "type": "array"
+        },
+        "layovers": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Layovers",
+          "type": "array"
+        }
+      },
+      "title": "FlightDetail",
+      "type": "object"
+    },
+    "FlightSegment": {
+      "additionalProperties": false,
+      "properties": {
+        "from_iata": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "From Iata"
+        },
+        "to_iata": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "To Iata"
+        },
+        "flight_no": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Flight No"
+        },
+        "dep": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dep"
+        },
+        "arr": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Arr"
+        }
+      },
+      "title": "FlightSegment",
+      "type": "object"
+    },
+    "Geometry": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "point",
+            "line"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "track_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Track Id"
+        },
+        "polyline": {
+          "anyOf": [
+            {
+              "items": {
+                "maxItems": 2,
+                "minItems": 2,
+                "prefixItems": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "type": "array"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Polyline"
+        },
+        "reliability": {
+          "$ref": "#/$defs/GeometryReliability",
+          "default": "measured"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "title": "Geometry",
+      "type": "object"
+    },
+    "GeometryReliability": {
+      "enum": [
+        "measured",
+        "sparse",
+        "assumed"
+      ],
+      "title": "GeometryReliability",
+      "type": "string"
+    },
+    "IngestionReport": {
+      "additionalProperties": false,
+      "description": "Surfaced to the user BEFORE the draft. Degradations are never silent.",
+      "properties": {
+        "source_id": {
+          "title": "Source Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/SourceKind"
+        },
+        "detected_format": {
+          "default": "unknown",
+          "title": "Detected Format",
+          "type": "string"
+        },
+        "confidence": {
+          "default": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "files_seen": {
+          "default": 0,
+          "title": "Files Seen",
+          "type": "integer"
+        },
+        "files_parsed": {
+          "default": 0,
+          "title": "Files Parsed",
+          "type": "integer"
+        },
+        "records_total": {
+          "default": 0,
+          "title": "Records Total",
+          "type": "integer"
+        },
+        "records_in_window": {
+          "default": 0,
+          "title": "Records In Window",
+          "type": "integer"
+        },
+        "skipped": {
+          "items": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "title": "Skipped",
+          "type": "array"
+        },
+        "degradations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Degradations",
+          "type": "array"
+        },
+        "notes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Notes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "source_id",
+        "kind"
+      ],
+      "title": "IngestionReport",
+      "type": "object"
+    },
+    "LocationSource": {
+      "enum": [
+        "exif",
+        "inferred",
+        "user",
+        "none"
+      ],
+      "title": "LocationSource",
+      "type": "string"
+    },
+    "MediaAsset": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "hash": {
+          "title": "Hash",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/MediaKind"
+        },
+        "filename": {
+          "title": "Filename",
+          "type": "string"
+        },
+        "normalized_filename": {
+          "title": "Normalized Filename",
+          "type": "string"
+        },
+        "captured_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Captured At"
+        },
+        "timezone": {
+          "default": "UTC",
+          "title": "Timezone",
+          "type": "string"
+        },
+        "time_source": {
+          "$ref": "#/$defs/TimeSource",
+          "default": "mtime"
+        },
+        "lat": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lat"
+        },
+        "lon": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lon"
+        },
+        "location_source": {
+          "$ref": "#/$defs/LocationSource",
+          "default": "none"
+        },
+        "width": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Width"
+        },
+        "height": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Height"
+        },
+        "orientation": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Orientation"
+        },
+        "device_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device Id"
+        },
+        "variant": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MediaVariant"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "duration_s": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Duration S"
+        },
+        "thumb_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Thumb Ref"
+        },
+        "web_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Web Ref"
+        },
+        "poster_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Poster Ref"
+        },
+        "excluded_from_export": {
+          "default": false,
+          "title": "Excluded From Export",
+          "type": "boolean"
+        },
+        "size_bytes": {
+          "default": 0,
+          "title": "Size Bytes",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "hash",
+        "kind",
+        "filename",
+        "normalized_filename"
+      ],
+      "title": "MediaAsset",
+      "type": "object"
+    },
+    "MediaKind": {
+      "enum": [
+        "photo",
+        "video"
+      ],
+      "title": "MediaKind",
+      "type": "string"
+    },
+    "MediaVariant": {
+      "enum": [
+        "MP",
+        "NIGHT",
+        "PANO"
+      ],
+      "title": "MediaVariant",
+      "type": "string"
+    },
+    "Place": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "lat": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lat"
+        },
+        "lon": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lon"
+        },
+        "address": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Address"
+        },
+        "google_place_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Google Place Id"
+        },
+        "osm_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Osm Id"
+        },
+        "category": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Category"
+        },
+        "source": {
+          "$ref": "#/$defs/PlaceSource",
+          "default": "coords"
+        },
+        "confidence": {
+          "default": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "Place",
+      "type": "object"
+    },
+    "PlaceDetail": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "place",
+          "default": "place",
+          "title": "Kind",
+          "type": "string"
+        },
+        "duration_s": {
+          "default": 0.0,
+          "title": "Duration S",
+          "type": "number"
+        },
+        "category": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Category"
+        },
+        "accommodation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Accommodation"
+        }
+      },
+      "title": "PlaceDetail",
+      "type": "object"
+    },
+    "PlaceSource": {
+      "enum": [
+        "osm",
+        "nominatim",
+        "photon",
+        "google",
+        "gpx",
+        "user",
+        "coords"
+      ],
+      "title": "PlaceSource",
+      "type": "string"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "properties": {
+        "derived_from": {
+          "items": {
+            "$ref": "#/$defs/SourceRef"
+          },
+          "title": "Derived From",
+          "type": "array"
+        },
+        "rules": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Rules",
+          "type": "array"
+        },
+        "confidence": {
+          "default": 0.5,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "absorbed": {
+          "items": {
+            "$ref": "#/$defs/AbsorbedRef"
+          },
+          "title": "Absorbed",
+          "type": "array"
+        },
+        "superseded_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Superseded By"
+        }
+      },
+      "title": "Provenance",
+      "type": "object"
+    },
+    "Source": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/SourceKind"
+        },
+        "detected_format": {
+          "default": "unknown",
+          "title": "Detected Format",
+          "type": "string"
+        },
+        "file_hash": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "File Hash"
+        },
+        "display_name": {
+          "default": "",
+          "title": "Display Name",
+          "type": "string"
+        },
+        "imported_at": {
+          "format": "date-time",
+          "title": "Imported At",
+          "type": "string"
+        },
+        "report": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/IngestionReport"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "imported_at"
+      ],
+      "title": "Source",
+      "type": "object"
+    },
+    "SourceKind": {
+      "enum": [
+        "timeline",
+        "gpx",
+        "media",
+        "manual"
+      ],
+      "title": "SourceKind",
+      "type": "string"
+    },
+    "SourceRef": {
+      "additionalProperties": false,
+      "properties": {
+        "source_id": {
+          "title": "Source Id",
+          "type": "string"
+        },
+        "ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ref"
+        }
+      },
+      "required": [
+        "source_id"
+      ],
+      "title": "SourceRef",
+      "type": "object"
+    },
+    "TimeSource": {
+      "enum": [
+        "exif",
+        "exif_no_offset",
+        "filename",
+        "mtime",
+        "user"
+      ],
+      "title": "TimeSource",
+      "type": "string"
+    },
+    "TrackMeta": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "source_id": {
+          "title": "Source Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "activity_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Activity Type"
+        },
+        "start": {
+          "format": "date-time",
+          "title": "Start",
+          "type": "string"
+        },
+        "end": {
+          "format": "date-time",
+          "title": "End",
+          "type": "string"
+        },
+        "timezone": {
+          "default": "UTC",
+          "title": "Timezone",
+          "type": "string"
+        },
+        "bbox": {
+          "anyOf": [
+            {
+              "maxItems": 4,
+              "minItems": 4,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bbox"
+        },
+        "stats": {
+          "$ref": "#/$defs/TrackStats"
+        },
+        "point_count": {
+          "default": 0,
+          "title": "Point Count",
+          "type": "integer"
+        },
+        "simplified_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Simplified Ref"
+        },
+        "original_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Original Ref"
+        },
+        "mergeable_with": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Mergeable With",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "source_id",
+        "name",
+        "start",
+        "end"
+      ],
+      "title": "TrackMeta",
+      "type": "object"
+    },
+    "TrackStats": {
+      "additionalProperties": false,
+      "properties": {
+        "distance_m": {
+          "default": 0.0,
+          "title": "Distance M",
+          "type": "number"
+        },
+        "ascent_m": {
+          "default": 0.0,
+          "title": "Ascent M",
+          "type": "number"
+        },
+        "descent_m": {
+          "default": 0.0,
+          "title": "Descent M",
+          "type": "number"
+        },
+        "max_ele_m": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Ele M"
+        },
+        "min_ele_m": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min Ele M"
+        },
+        "moving_time_s": {
+          "default": 0.0,
+          "title": "Moving Time S",
+          "type": "number"
+        },
+        "elapsed_time_s": {
+          "default": 0.0,
+          "title": "Elapsed Time S",
+          "type": "number"
+        },
+        "avg_hr": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Avg Hr"
+        },
+        "max_hr": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Hr"
+        },
+        "elevation_threshold_m": {
+          "default": 0.0,
+          "title": "Elevation Threshold M",
+          "type": "number"
+        }
+      },
+      "title": "TrackStats",
+      "type": "object"
+    },
+    "TransitDetail": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "transit",
+          "default": "transit",
+          "title": "Kind",
+          "type": "string"
+        },
+        "distance_m": {
+          "default": 0.0,
+          "title": "Distance M",
+          "type": "number"
+        },
+        "duration_s": {
+          "default": 0.0,
+          "title": "Duration S",
+          "type": "number"
+        },
+        "geometry_reliability": {
+          "$ref": "#/$defs/GeometryReliability",
+          "default": "measured"
+        },
+        "mode_hint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mode Hint"
+        }
+      },
+      "title": "TransitDetail",
+      "type": "object"
+    },
+    "TripStats": {
+      "additionalProperties": false,
+      "description": "Trip-level statistics. NO ELEVATION -- telemetry belongs to activities.\n\nA city break must produce a meaningful stats block; an alpine trip must not push\nelevation up to trip level. See functional-spec section 10.",
+      "properties": {
+        "day_count": {
+          "default": 0,
+          "title": "Day Count",
+          "type": "integer"
+        },
+        "excluded_day_count": {
+          "default": 0,
+          "title": "Excluded Day Count",
+          "type": "integer"
+        },
+        "event_count": {
+          "default": 0,
+          "title": "Event Count",
+          "type": "integer"
+        },
+        "suppressed_event_count": {
+          "default": 0,
+          "title": "Suppressed Event Count",
+          "type": "integer"
+        },
+        "place_count": {
+          "default": 0,
+          "title": "Place Count",
+          "type": "integer"
+        },
+        "overnight_count": {
+          "default": 0,
+          "title": "Overnight Count",
+          "type": "integer"
+        },
+        "photo_count": {
+          "default": 0,
+          "title": "Photo Count",
+          "type": "integer"
+        },
+        "video_count": {
+          "default": 0,
+          "title": "Video Count",
+          "type": "integer"
+        },
+        "track_count": {
+          "default": 0,
+          "title": "Track Count",
+          "type": "integer"
+        },
+        "distance_by_mode_m": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Distance By Mode M",
+          "type": "object"
+        },
+        "countries": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Countries",
+          "type": "array"
+        },
+        "unaccounted_hours": {
+          "default": 0.0,
+          "title": "Unaccounted Hours",
+          "type": "number"
+        },
+        "unaccounted_count": {
+          "default": 0,
+          "title": "Unaccounted Count",
+          "type": "integer"
+        },
+        "days_blind": {
+          "default": 0,
+          "title": "Days Blind",
+          "type": "integer"
+        },
+        "coverage": {
+          "items": {
+            "$ref": "#/$defs/DayCoverage"
+          },
+          "title": "Coverage",
+          "type": "array"
+        }
+      },
+      "title": "TripStats",
+      "type": "object"
+    },
+    "UnknownDetail": {
+      "additionalProperties": false,
+      "description": "An unaccounted gap. States facts only -- never a classification. ADR-0007.",
+      "properties": {
+        "kind": {
+          "const": "unknown",
+          "default": "unknown",
+          "title": "Kind",
+          "type": "string"
+        },
+        "gap_hours": {
+          "default": 0.0,
+          "title": "Gap Hours",
+          "type": "number"
+        },
+        "displacement_km": {
+          "default": 0.0,
+          "title": "Displacement Km",
+          "type": "number"
+        },
+        "from_place": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Place"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "to_place": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Place"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "candidate_types": {
+          "items": {
+            "$ref": "#/$defs/EventType"
+          },
+          "title": "Candidate Types",
+          "type": "array"
+        }
+      },
+      "title": "UnknownDetail",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "The capsule root. Serialised to `capsule.json`.\n\nInvariant, checked on every read, write and curation operation: every media id appears\nin exactly one active event OR in `unassigned_media_ids` -- never both, never neither.",
+  "properties": {
+    "schema_version": {
+      "default": "0.1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "title": {
+      "title": "Title",
+      "type": "string"
+    },
+    "subtitle": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Subtitle"
+    },
+    "date_range": {
+      "$ref": "#/$defs/DateRange"
+    },
+    "default_timezone": {
+      "default": "UTC",
+      "title": "Default Timezone",
+      "type": "string"
+    },
+    "cover_media_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Cover Media Id"
+    },
+    "notes": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Notes"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+    },
+    "sources": {
+      "items": {
+        "$ref": "#/$defs/Source"
+      },
+      "title": "Sources",
+      "type": "array"
+    },
+    "days": {
+      "items": {
+        "$ref": "#/$defs/Day"
+      },
+      "title": "Days",
+      "type": "array"
+    },
+    "events": {
+      "items": {
+        "$ref": "#/$defs/Event"
+      },
+      "title": "Events",
+      "type": "array"
+    },
+    "tracks": {
+      "items": {
+        "$ref": "#/$defs/TrackMeta"
+      },
+      "title": "Tracks",
+      "type": "array"
+    },
+    "media": {
+      "items": {
+        "$ref": "#/$defs/MediaAsset"
+      },
+      "title": "Media",
+      "type": "array"
+    },
+    "unassigned_media_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Unassigned Media Ids",
+      "type": "array"
+    },
+    "unassigned_track_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Unassigned Track Ids",
+      "type": "array"
+    },
+    "stats": {
+      "$ref": "#/$defs/TripStats"
+    }
+  },
+  "required": [
+    "id",
+    "title",
+    "date_range",
+    "created_at",
+    "updated_at"
+  ],
+  "title": "Trip",
+  "type": "object"
+}
