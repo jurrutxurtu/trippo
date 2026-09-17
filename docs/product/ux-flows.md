@@ -62,10 +62,61 @@ Rules that make it pleasant:
   card, a visit renders place + photos, a hike renders track + profile. A city trip never shows an
   empty elevation chart.
 
-## Step 7 — the capsule
+## Step 7 — the capsule explorer
 
-Scrollytelling read view: the map follows the route as the story scrolls; day sections carry hero
-photos, stats and the user's notes. Export writes a self-contained `index.html` plus `media/`.
+**Not a scrolling article.** The first prototype was an editorial page — photographs, stats, a
+decorative map — and it was the wrong product. A finished trip is something you *explore*.
+
+```
+┌──────────────────────────────┬────────────────────────────────────────┐
+│ TIMELINE                     │ MAP                                    │
+│                              │                                        │
+│ ▸ Day 5  Dublin              │   scope: TRIP                          │
+│ ▾ Day 6  Mourne Mountains    │   whole route, day markers,            │
+│    07:31 drive  → Rath       │   clustered photo pins                 │
+│    11:44 hike   Slieve Donard│                                        │
+│          12.0 km · +645 m    │   scope: DAY                           │
+│    15:48 visit  Carrick Cafe │   fits Day.bbox; that day's legs lit,  │
+│    20:07 stay   Hawthorn     │   the rest faded to context            │
+│ ▸ Day 7  Belfast             │                                        │
+│                              │   scope: ACTIVITY                      │
+│ ─────────────────────────────│   fits the track; trailhead and summit │
+│ ELEVATION (activity only)    │   marked, photos placed along it       │
+│  ╱╲__╱╲  Slieve Donard 850 m │                                        │
+└──────────────────────────────┴────────────────────────────────────────┘
+```
+
+### Three scopes, one state machine
+
+`trip → day → activity`. Selection drives the map; clicking the map drives selection. Zooming
+out one level is always available and always obvious.
+
+| Scope | Map shows | Timeline shows |
+|---|---|---|
+| `trip` | whole route, ferry legs dashed, day markers, clustered photo pins | all days collapsed, stats header |
+| `day` | fits `Day.bbox`; that day's legs lit, the rest faded | that day expanded, events listed |
+| `activity` | fits the track; trailhead, summit, photos along the route | the activity detail panel |
+
+### Activity detail
+
+Opens when an event with a track is selected. Elevation profile (uPlot) with the cursor **synced
+bidirectionally** to the map: hovering the chart moves a marker along the route, hovering the route
+moves the chart cursor. Both read one shared index into the resampled profile — a single source of
+truth rather than two hover handlers that drift apart.
+
+Shows distance, ascent above the stated threshold, max elevation, moving time, heart rate where the
+GPX carries it, **summits and passes crossed** (from OSM along the track), and the photographs taken
+during it, positioned at the point on the track where each was shot.
+
+### Map pins
+
+Photos (clustered), named places, overnight stays, and unaccounted gaps — the last drawn as a dashed
+line labelled "route unknown", never as a confident route.
+
+### Export
+
+A self-contained `index.html` embedding this explorer, plus `media/`. Video is referenced but
+excluded in the POC.
 
 ## Future UX candidates **[LATER]**
 

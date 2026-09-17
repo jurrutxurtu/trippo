@@ -103,6 +103,7 @@ just snapshot-update  # accept golden snapshot changes (explain in commit!)
 | Question | File |
 |---|---|
 | Why does this exist? | `docs/product/vision.md` |
+| What is done, what is next? | `docs/product/roadmap.md` |
 | What must it do? | `docs/product/functional-spec.md` |
 | How is it built? | `docs/technical/architecture.md` |
 | What is a capsule? | `docs/technical/capsule-format.md` |
