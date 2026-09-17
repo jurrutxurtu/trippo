@@ -11,6 +11,7 @@ import {
 } from "@/lib/format";
 import type { Day, Trip, TripEvent } from "@/lib/types";
 import { ActivityPanel } from "@/features/activity/ActivityPanel";
+import { PhotoStrip } from "@/components/PhotoStrip";
 
 /** The left pane. Collapsed days at trip scope, expanded events at day scope. */
 export function Timeline() {
@@ -229,8 +230,8 @@ function EventRow({
           {localTime(event.start, event.utc_offset_minutes)}
         </span>
         <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${meta.dot}`} />
-        <span className="min-w-0 flex-1">
-          <span className="flex items-baseline gap-1.5">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline gap-1.5">
             <span className="truncate text-sm text-zinc-900">{eventName(event)}</span>
             {isContested(event) && (
               <span
@@ -240,16 +241,19 @@ function EventRow({
                 ?
               </span>
             )}
-          </span>
-          <span className="mt-0.5 flex items-center gap-1.5 text-[11px] text-zinc-400">
+          </div>
+          <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-zinc-400">
             <span>{meta.icon}</span>
             <span>{duration((event.end
               ? new Date(event.end).getTime() - new Date(event.start).getTime()
               : 0) / 1000)}</span>
-            {event.media_ids.length > 0 && <span>&middot; {event.media_ids.length} ph</span>}
-          </span>
+            {event.media_ids.length > 0 && (
+              <span>&middot; {event.media_ids.length} photos</span>
+            )}
+          </div>
+          <PhotoStrip trip={trip} event={event} columns={6} compact />
           {track && (
-            <span className="tnum mt-1 flex items-center gap-3 text-[11px] text-zinc-600">
+            <div className="tnum mt-1 flex items-center gap-3 text-[11px] text-zinc-600">
               <span>
                 <b className="font-semibold text-zinc-900">
                   {(track.stats.distance_m / 1000).toFixed(1)}
@@ -263,9 +267,9 @@ function EventRow({
                 m
               </span>
               <span className="text-indigo-600">view &rarr;</span>
-            </span>
+            </div>
           )}
-        </span>
+        </div>
       </button>
     </li>
   );

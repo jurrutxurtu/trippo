@@ -4,6 +4,7 @@ import "uplot/dist/uPlot.min.css";
 import { useTrip } from "@/store/trip";
 import { TYPE_META, duration, km } from "@/lib/format";
 import type { TripEvent } from "@/lib/types";
+import { PhotoStrip } from "@/components/PhotoStrip";
 
 /**
  * Activity detail: telemetry, the summits crossed, and the elevation profile.
@@ -89,7 +90,7 @@ export function ActivityPanel({ event }: { event: TripEvent }) {
         </p>
       )}
 
-      <PhotoStrip event={event} />
+      <ActivityPhotos event={event} />
     </div>
   );
 }
@@ -212,30 +213,16 @@ function Profile({
   );
 }
 
-function PhotoStrip({ event }: { event: TripEvent }) {
+function ActivityPhotos({ event }: { event: TripEvent }) {
   const trip = useTrip((s) => s.trip);
   if (!trip || event.media_ids.length === 0) return null;
-  const byId = new Map(trip.media.map((m) => [m.id, m]));
-  const photos = event.media_ids
-    .map((id) => byId.get(id))
-    .filter((m) => m?.thumb_ref);
-
   return (
     <div className="px-6 py-4">
       <h3 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
-        Photographs <span className="font-normal text-zinc-400">{photos.length}</span>
+        Photographs{" "}
+        <span className="font-normal text-zinc-400">{event.media_ids.length}</span>
       </h3>
-      <div className="mt-2.5 grid grid-cols-4 gap-1.5">
-        {photos.map((m) => (
-          <img
-            key={m!.id}
-            src={`/${m!.thumb_ref}`}
-            loading="lazy"
-            alt=""
-            className="aspect-square w-full rounded object-cover ring-1 ring-black/5"
-          />
-        ))}
-      </div>
+      <PhotoStrip trip={trip} event={event} columns={4} />
     </div>
   );
 }

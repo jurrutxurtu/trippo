@@ -56,6 +56,11 @@ MOVING_SPEED_MIN_KMH: Final = 0.8
 PHOTO_MATCH_DEFAULT_MIN: Final = 45
 PHOTO_MATCH_MAX_MIN: Final = 120
 PHOTO_BURST_GAP_S: Final = 20
+#: How many photographs represent an event by default.
+PHOTO_SELECTION_MAX: Final = 8
+#: Minimum separation between chosen photographs, as a fraction of the event's duration.
+#: Stops a summary of a six-hour walk being six shots of lunch.
+PHOTO_SELECTION_MIN_SPREAD: Final = 0.08
 THUMB_PX: Final = 256
 WEB_PX: Final = 1_600
 

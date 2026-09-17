@@ -116,7 +116,11 @@ export interface TripEvent {
     polyline: [number, number][] | null;
     reliability: GeometryReliability;
   } | null;
+  /** Every media item owned by this event. */
   media_ids: string[];
+  /** The small, well-spread subset that represents it. The rest are one click away. */
+  selected_media_ids: string[];
+  user_selected_media: boolean;
   track_ids: string[];
   provenance: Provenance;
   title: string | null;

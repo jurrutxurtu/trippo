@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Trip, TripEvent, TrackGeometry, Day } from "@/lib/types";
+import type { Trip, TripEvent, TrackGeometry, Day, MediaAsset } from "@/lib/types";
 import { ACTIVITY_TYPES } from "@/lib/types";
 
 /**
@@ -24,6 +24,10 @@ interface State {
   cursorIndex: number | null;
   trackGeometry: Record<string, TrackGeometry>;
   hoveredMediaId: string | null;
+  /** Open photo viewer. items is the set being browsed, not the whole trip. */
+  lightbox: { items: MediaAsset[]; index: number } | null;
+  /** Events whose full photo set the user has revealed, beyond the suggested selection. */
+  expandedPhotos: Set<string>;
 
   load: () => Promise<void>;
   selectDay: (dayId: string | null) => void;
@@ -32,6 +36,10 @@ interface State {
   setCursor: (i: number | null) => void;
   setHoveredMedia: (id: string | null) => void;
   loadTrack: (trackId: string) => Promise<void>;
+  openLightbox: (items: MediaAsset[], index: number) => void;
+  closeLightbox: () => void;
+  stepLightbox: (delta: number) => void;
+  toggleExpandedPhotos: (eventId: string) => void;
 }
 
 export const useTrip = create<State>((set, get) => ({
@@ -44,6 +52,8 @@ export const useTrip = create<State>((set, get) => ({
   cursorIndex: null,
   trackGeometry: {},
   hoveredMediaId: null,
+  lightbox: null,
+  expandedPhotos: new Set<string>(),
 
   async load() {
     set({ loading: true, error: null });
@@ -102,6 +112,28 @@ export const useTrip = create<State>((set, get) => ({
     set({ hoveredMediaId: id });
   },
 
+  openLightbox(items, index) {
+    if (items.length) set({ lightbox: { items, index } });
+  },
+
+  closeLightbox() {
+    set({ lightbox: null });
+  },
+
+  stepLightbox(delta) {
+    const lb = get().lightbox;
+    if (!lb) return;
+    const n = lb.items.length;
+    set({ lightbox: { ...lb, index: (lb.index + delta + n) % n } });
+  },
+
+  toggleExpandedPhotos(eventId) {
+    const next = new Set(get().expandedPhotos);
+    if (next.has(eventId)) next.delete(eventId);
+    else next.add(eventId);
+    set({ expandedPhotos: next });
+  },
+
   async loadTrack(trackId) {
     if (get().trackGeometry[trackId]) return;
     try {
@@ -132,6 +164,30 @@ export function dayEvents(trip: Trip, day: Day): TripEvent[] {
   return day.event_ids
     .map((id) => byId.get(id))
     .filter((e): e is TripEvent => !!e && e.status === "active");
+}
+
+/**
+ * Photographs for an event, honouring the suggested selection.
+ *
+ * An event can own 87 photographs. The selection is a small, well-spread subset chosen by
+ * the backend; the rest appear when the user expands. Nothing is hidden permanently.
+ */
+export function eventPhotos(
+  trip: Trip,
+  event: TripEvent,
+  expanded: boolean,
+): { shown: MediaAsset[]; all: MediaAsset[]; hidden: number } {
+  const byId = new Map(trip.media.map((m) => [m.id, m]));
+  const all = event.media_ids
+    .map((id) => byId.get(id))
+    .filter((m): m is MediaAsset => !!m && !!m.thumb_ref);
+
+  if (expanded || event.selected_media_ids.length === 0) {
+    return { shown: all, all, hidden: 0 };
+  }
+  const selected = new Set(event.selected_media_ids);
+  const shown = all.filter((m) => selected.has(m.id));
+  return { shown, all, hidden: all.length - shown.length };
 }
 
 export function spanningEvents(trip: Trip, day: Day): TripEvent[] {

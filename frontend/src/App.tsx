@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useTrip } from "@/store/trip";
 import { Timeline } from "@/features/explorer/Timeline";
 import { MapPane } from "@/features/map/MapPane";
+import { Lightbox } from "@/components/Lightbox";
 
 /**
  * The capsule explorer: timeline left, map right, one shared selection.
@@ -10,20 +11,21 @@ import { MapPane } from "@/features/map/MapPane";
  * see docs/product/ux-flows.md §"Capsule explorer".
  */
 export default function App() {
-  const { load, loading, error, trip, back, scope } = useTrip();
+  const { load, loading, error, trip, back, scope, lightbox } = useTrip();
 
   useEffect(() => {
     void load();
   }, [load]);
 
   // Escape walks back up the scope machine: activity -> day -> trip.
+  // The viewer owns Escape while it is open, so one press does one thing.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && scope !== "trip") back();
+      if (e.key === "Escape" && !lightbox && scope !== "trip") back();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [back, scope]);
+  }, [back, scope, lightbox]);
 
   if (loading) {
     return (
@@ -55,6 +57,7 @@ export default function App() {
       <main className="min-w-0 flex-1">
         <MapPane />
       </main>
+      <Lightbox />
     </div>
   );
 }

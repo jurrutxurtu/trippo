@@ -3,6 +3,7 @@ import maplibregl, { type LngLatBoundsLike, type Map as MLMap } from "maplibre-g
 import { useTrip, selectedDay, selectedEvent, dayEvents } from "@/store/trip";
 import { colourFor, styleFor, MAP_COLOURS, type StyleName } from "./styles";
 import type { BBox, Trip, TripEvent } from "@/lib/types";
+import { TYPE_META, duration } from "@/lib/format";
 
 /**
  * The map pane. Reacts to the scope machine; never owns selection itself.
@@ -85,17 +86,25 @@ export function MapPane() {
     const activeIds = new Set(
       day ? dayEvents(trip, day).map((e) => e.id) : trip.events.map((e) => e.id),
     );
+    // Narrow the pins as the scope narrows: the whole trip, then a day, then the single
+    // activity. Showing a day's 200 photographs while looking at one hike is noise.
+    const pinScope =
+      scope === "activity" && event
+        ? new Set([event.id])
+        : day
+          ? activeIds
+          : null;
 
     setData(m, "routes", routesGeoJSON(trip, activeIds));
-    setData(m, "photos", photosGeoJSON(trip, day ? activeIds : null));
-    setData(m, "places", placesGeoJSON(trip, day ? activeIds : null));
+    setData(m, "photos", photosGeoJSON(trip, pinScope));
+    setData(m, "places", placesGeoJSON(trip, pinScope));
     setData(m, "highlights", highlightsGeoJSON(event));
 
     const geom = event?.track_ids[0]
       ? state.trackGeometry[event.track_ids[0]]
       : undefined;
     setData(m, "track", trackGeoJSON(geom?.simplified));
-  }, [ready, trip, day, event, state.trackGeometry]);
+  }, [ready, trip, day, event, scope, state.trackGeometry]);
 
   // ----------------------------------------------------------------- framing
   useEffect(() => {
@@ -245,7 +254,7 @@ function addLayers(m: MLMap) {
     type: "circle",
     source: "places",
     paint: {
-      "circle-radius": 5,
+      "circle-radius": ["get", "radius"],
       "circle-color": ["get", "colour"],
       "circle-stroke-width": 2,
       "circle-stroke-color": "#ffffff",
@@ -333,10 +342,118 @@ function addLayers(m: MLMap) {
     const id = e.features?.[0]?.properties?.event_id;
     if (typeof id === "string") useTrip.getState().selectEvent(id);
   });
-  for (const layer of ["places", "photo-clusters", "photo-point"]) {
+
+  // A cluster you cannot open is just a number. Zoom to the point where it splits.
+  m.on("click", "photo-clusters", (e) => {
+    const feature = e.features?.[0];
+    const clusterId = feature?.properties?.cluster_id;
+    if (clusterId == null) return;
+    const src = m.getSource("photos") as maplibregl.GeoJSONSource;
+    void src.getClusterExpansionZoom(clusterId).then((zoom) => {
+      const [lng, lat] = (feature!.geometry as GeoJSON.Point).coordinates as [
+        number,
+        number,
+      ];
+      m.easeTo({ center: [lng, lat], zoom: Math.min(zoom + 0.4, 18), duration: 500 });
+    });
+  });
+
+  // A lone photograph opens in the viewer, so a pin on the map is a way into the album.
+  m.on("click", "photo-point", (e) => {
+    const id = e.features?.[0]?.properties?.media_id;
+    if (typeof id !== "string") return;
+    const { trip, openLightbox } = useTrip.getState();
+    if (!trip) return;
+    const nearby = trip.media.filter((x) => x.thumb_ref && x.lat !== null);
+    const idx = nearby.findIndex((x) => x.id === id);
+    if (idx >= 0) openLightbox(nearby, idx);
+  });
+
+  // Hover tells you what a pin IS -- a photograph, a summit, a visit -- without a click.
+  attachHoverPopup(m, "photo-point", (props) => {
+    const thumb = props.thumb as string | undefined;
+    const time = (props.time as string) ?? "";
+    return `<div class="w-40">
+      ${thumb ? `<img src="/${thumb}" class="h-28 w-full rounded-t-lg object-cover" />` : ""}
+      <div class="px-2.5 py-1.5 text-[11px] text-zinc-600">Photograph${
+        time ? ` &middot; ${time}` : ""
+      }</div></div>`;
+  });
+
+  attachHoverPopup(m, "photo-clusters", (props) => {
+    const n = props.point_count as number;
+    return `<div class="px-3 py-2 text-[11px] text-zinc-700">
+      <b>${n}</b> photographs &middot; click to zoom in</div>`;
+  });
+
+  attachHoverPopup(m, "places", (props) => {
+    const name = (props.name as string) ?? "";
+    const label = (props.type_label as string) ?? "";
+    const icon = (props.icon as string) ?? "";
+    const meta = (props.meta as string) ?? "";
+    const thumb = props.thumb as string | undefined;
+    return `<div class="w-44">
+      ${thumb ? `<img src="/${thumb}" class="h-24 w-full rounded-t-lg object-cover" />` : ""}
+      <div class="px-2.5 py-2">
+        <div class="text-xs font-semibold text-zinc-900">${escapeHtml(name)}</div>
+        <div class="mt-0.5 text-[10px] text-zinc-500">${icon} ${label}${
+          meta ? ` &middot; ${meta}` : ""
+        }</div>
+      </div></div>`;
+  });
+
+  attachHoverPopup(m, "highlights", (props) => {
+    const name = (props.name as string) ?? "";
+    const kind = (props.kind as string) ?? "";
+    const ele = props.ele as number | undefined;
+    const noun = kind.includes("peak")
+      ? "Summit"
+      : kind.includes("water")
+        ? "Lake"
+        : "Pass";
+    return `<div class="px-3 py-2">
+      <div class="text-xs font-semibold text-zinc-900">${escapeHtml(name)}</div>
+      <div class="mt-0.5 text-[10px] text-zinc-500">${noun}${
+        ele ? ` &middot; ${Math.round(ele)} m` : ""
+      }</div></div>`;
+  });
+
+  for (const layer of ["places", "photo-clusters", "photo-point", "highlights"]) {
     m.on("mouseenter", layer, () => (m.getCanvas().style.cursor = "pointer"));
     m.on("mouseleave", layer, () => (m.getCanvas().style.cursor = ""));
   }
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c,
+  );
+}
+
+/** A pin that does not say what it is may as well not be there. */
+function attachHoverPopup(
+  m: MLMap,
+  layer: string,
+  render: (props: Record<string, unknown>) => string,
+) {
+  const popup = new maplibregl.Popup({
+    closeButton: false,
+    closeOnClick: false,
+    offset: 12,
+    maxWidth: "none",
+  });
+  m.on("mousemove", layer, (e) => {
+    const f = e.features?.[0];
+    if (!f) return;
+    const coords =
+      f.geometry.type === "Point"
+        ? (f.geometry.coordinates as [number, number])
+        : [e.lngLat.lng, e.lngLat.lat];
+    popup.setLngLat(coords as [number, number]).setHTML(render(f.properties ?? {})).addTo(m);
+  });
+  m.on("mouseleave", layer, () => popup.remove());
 }
 
 // --------------------------------------------------------------------- geojson
@@ -397,13 +514,18 @@ function photosGeoJSON(trip: Trip, limitTo: Set<string> | null): GeoJSON.Feature
       )
       .map((m) => ({
         type: "Feature" as const,
-        properties: { media_id: m.id, thumb: m.thumb_ref },
+        properties: {
+          media_id: m.id,
+          thumb: m.thumb_ref,
+          time: m.captured_at ? m.captured_at.slice(11, 16) : "",
+        },
         geometry: { type: "Point" as const, coordinates: [m.lon!, m.lat!] },
       })),
   };
 }
 
 function placesGeoJSON(trip: Trip, limitTo: Set<string> | null): GeoJSON.FeatureCollection {
+  const byId = new Map(trip.media.map((m) => [m.id, m]));
   return {
     type: "FeatureCollection",
     features: trip.events
@@ -415,18 +537,36 @@ function placesGeoJSON(trip: Trip, limitTo: Set<string> | null): GeoJSON.Feature
           !["drive", "flight", "ferry"].includes(e.type) &&
           (!limitTo || limitTo.has(e.id)),
       )
-      .map((e) => ({
-        type: "Feature" as const,
-        properties: {
-          event_id: e.id,
-          name: e.place!.name,
-          colour: e.type === "overnight" ? "#a78bfa" : "#38bdf8",
-        },
-        geometry: {
-          type: "Point" as const,
-          coordinates: [e.place!.lon!, e.place!.lat!],
-        },
-      })),
+      .map((e) => {
+        const meta = TYPE_META[e.type];
+        // The first suggested photograph doubles as a preview, so hovering a pin shows
+        // what the place actually looked like.
+        const preview = e.selected_media_ids
+          .map((id) => byId.get(id))
+          .find((m) => m?.thumb_ref);
+        const seconds =
+          (new Date(e.end).getTime() - new Date(e.start).getTime()) / 1000;
+        return {
+          type: "Feature" as const,
+          properties: {
+            event_id: e.id,
+            name: e.place!.name,
+            type_label: meta.label,
+            icon: meta.icon,
+            meta:
+              e.media_ids.length > 0
+                ? `${duration(seconds)} \u00b7 ${e.media_ids.length} photos`
+                : duration(seconds),
+            thumb: preview?.thumb_ref ?? undefined,
+            colour: e.type === "overnight" ? "#a78bfa" : "#38bdf8",
+            radius: e.type === "overnight" ? 7 : 5,
+          },
+          geometry: {
+            type: "Point" as const,
+            coordinates: [e.place!.lon!, e.place!.lat!],
+          },
+        };
+      }),
   };
 }
 

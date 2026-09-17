@@ -37,6 +37,7 @@ from trippo.domain.models import (
     TransitDetail,
     Trip,
 )
+from trippo.domain.photos import select as select_photos
 
 #: Event types that can headline a day, best first. A drive is never the story of a day.
 _TITLE_PRIORITY = (
@@ -62,8 +63,22 @@ def summarize(trip: Trip) -> None:
         if not day.subtitle:
             day.subtitle = _day_subtitle(events, day.title)
 
+    _select_photos(trip)
     trip.route = _route(trip)
     trip.bbox = _trip_bbox(trip)
+
+
+def _select_photos(trip: Trip) -> None:
+    """Choose the representative photographs for each event.
+
+    Never touches an event the user has curated by hand.
+    """
+    by_id = {m.id: m for m in trip.media}
+    for e in trip.events:
+        if e.user_selected_media:
+            continue
+        owned = [m for mid in e.media_ids if (m := by_id.get(mid))]
+        e.selected_media_ids = select_photos(owned)
 
 
 # --------------------------------------------------------------------------- helpers

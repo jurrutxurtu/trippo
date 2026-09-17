@@ -3,7 +3,7 @@
 
 # Data model (generated)
 
-Capsule schema version **0.2.0**.
+Capsule schema version **0.3.0**.
 
 This document is generated from the Pydantic models in `backend/trippo/domain/models.py`.
 For the prose contract -- layout on disk, portability rules, invariants and migrations --
@@ -22,7 +22,7 @@ see [`capsule-format.md`](capsule-format.md).
 | `Day` | 12 |  |
 | `DayCoverage` | 4 |  |
 | `DayStats` | 7 | Per-day figures for the timeline heading. |
-| `Event` | 20 |  |
+| `Event` | 22 |  |
 | `FerryDetail` | 7 |  |
 | `FlightDetail` | 6 |  |
 | `FlightSegment` | 5 |  |
@@ -174,6 +174,8 @@ scoping rule intact: a city day shows distance and photographs, nothing about cl
 | `place` | `Place` \| `null` | no |  |
 | `geometry` | `Geometry` \| `null` | no |  |
 | `media_ids` | array of `string` | no |  |
+| `selected_media_ids` | array of `string` | no |  |
+| `user_selected_media` | `boolean` | no |  |
 | `track_ids` | array of `string` | no |  |
 | `provenance` | `Provenance` | no |  |
 | `user_edited` | `boolean` | no |  |

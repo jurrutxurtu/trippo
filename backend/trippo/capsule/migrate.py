@@ -39,9 +39,24 @@ def _v010_to_v020(payload: dict[str, Any]) -> dict[str, Any]:
     return payload
 
 
+def _v020_to_v030(payload: dict[str, Any]) -> dict[str, Any]:
+    """0.2.0 -> 0.3.0: photo selection.
+
+    Adds Event.selected_media_ids and Event.user_selected_media. Derived, so an empty
+    list is valid and domain.photos.select() refills it on the next build. A user's own
+    curation is preserved because the flag defaults to False only for capsules that never
+    had one.
+    """
+    for event in payload.get("events", []):
+        event.setdefault("selected_media_ids", [])
+        event.setdefault("user_selected_media", False)
+    return payload
+
+
 #: version -> (next_version, migration). Applied in order on read.
 MIGRATIONS: dict[str, tuple[str, Migration]] = {
     "0.1.0": ("0.2.0", _v010_to_v020),
+    "0.2.0": ("0.3.0", _v020_to_v030),
 }
 
 

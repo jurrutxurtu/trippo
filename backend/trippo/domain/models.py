@@ -15,7 +15,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-SCHEMA_VERSION = "0.2.0"
+SCHEMA_VERSION = "0.3.0"
 
 
 class _Base(BaseModel):
@@ -304,7 +304,14 @@ class Event(_Base):
     continues_to_next_day: bool = False  # pathology P5
     place: Place | None = None
     geometry: Geometry | None = None
+    #: Every media item owned by this event. The Golden Rule applies: nothing is lost.
     media_ids: list[str] = Field(default_factory=list)
+    #: The small, well-spread subset that represents the event. A three-hour hike can own
+    #: 87 photographs; showing all of them in a timeline row helps nobody. The rest stay
+    #: owned and one click away.
+    selected_media_ids: list[str] = Field(default_factory=list)
+    #: Set once the user curates the selection by hand, after which it is never recomputed.
+    user_selected_media: bool = False
     track_ids: list[str] = Field(default_factory=list)
     provenance: Provenance = Field(default_factory=Provenance)
     user_edited: bool = False

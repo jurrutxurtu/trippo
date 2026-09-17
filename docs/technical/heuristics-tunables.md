@@ -82,6 +82,8 @@ Failing events are `suppressed` with a reason, **never deleted**.
 | `PHOTO_MATCH_DEFAULT_MIN` | 45 | Default half-window for "Find nearby photos". |
 | `PHOTO_MATCH_MAX_MIN` | 120 | Upper bound offered in the UI. |
 | `PHOTO_BURST_GAP_S` | 20 | Photos closer than this are one burst; only one becomes a hero candidate. |
+| `PHOTO_SELECTION_MAX` | 8 | How many photographs represent an event by default. Enough to convey a day, few enough to scan in a timeline row. |
+| `PHOTO_SELECTION_MIN_SPREAD` | 0.08 | Minimum separation between chosen photographs, as a fraction of the event's duration. Without it a summary of a six-hour walk is six shots of lunch. |
 | `THUMB_PX` / `WEB_PX` | 256 / 1600 | Grid thumbnail and capsule/web derivative sizes. |
 
 ## Confidence priors

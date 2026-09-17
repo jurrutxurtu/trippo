@@ -9,6 +9,7 @@ browser never sees an original and never holds 8 GB in memory.
 
 from __future__ import annotations
 
+import mimetypes
 import os
 from pathlib import Path
 
@@ -20,7 +21,13 @@ from fastapi.staticfiles import StaticFiles
 from trippo.capsule import io as capsule_io
 from trippo.domain.models import Trip
 
-app = FastAPI(title="Trippo", version="0.2.0")
+# Windows has no registry entry for WebP, so `mimetypes` guesses None and StaticFiles
+# serves every derivative as application/octet-stream. Browsers mostly sniff their way
+# through it, but caches and <img> decoding hints do not.
+mimetypes.add_type("image/webp", ".webp")
+mimetypes.add_type("image/avif", ".avif")
+
+app = FastAPI(title="Trippo", version="0.3.0")
 
 # The SPA runs on Vite's dev server during development; same-origin in production.
 app.add_middleware(
