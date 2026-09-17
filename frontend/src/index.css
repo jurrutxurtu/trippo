@@ -1,0 +1,37 @@
+@import "tailwindcss";
+@import "maplibre-gl/dist/maplibre-gl.css";
+
+/* The design system lives here as tokens, so components stay pure utility classes.
+   See docs/product/ux-flows.md. Two rules worth restating:
+
+   1. Colour means STATUS, not category. Event types get an icon and a muted dot;
+      saturated colour is reserved for what needs attention.
+   2. Map data colours are deliberately distinct from the indigo UI accent, so chrome
+      never competes with the route. */
+@theme {
+  /* Data palette -- used on the map and in event dots, never for chrome. */
+  --color-track: oklch(0.6 0.13 165); /* emerald: measured GPS trail */
+  --color-ferry: oklch(0.72 0.12 210); /* cyan: sparse, approximate */
+  --color-drive: oklch(0.55 0.02 260); /* zinc: road legs */
+  --color-gap: oklch(0.75 0.16 75); /* amber: unaccounted -- the only loud colour */
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Times and figures must not jitter between rows. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* MapLibre ships its own control styling; align it with the rest of the chrome. */
+.maplibregl-ctrl-attrib {
+  font-size: 10px;
+}
+.maplibregl-popup-content {
+  padding: 0;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+}

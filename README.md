@@ -32,6 +32,21 @@ python -m trippo.cli build \
 
 Every source is optional. A trip can be built from photos alone.
 
+### Explore it
+
+`ash
+# terminal 1 -- serve the capsule
+export MAPTILER_KEY=...          # optional; falls back to OSM raster without it
+just serve ./Ireland.capsule
+
+# terminal 2 -- the studio
+just web                          # http://localhost:5173
+`
+
+Timeline on the left, map on the right. Clicking a day fits the map to it; opening an
+activity fits the track, marks the summits and draws the elevation profile, whose cursor
+is shared with the map. Esc walks back up.
+
 ## Documentation
 
 | | |

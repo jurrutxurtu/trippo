@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/features/activity/activitypanel.tsx","./src/features/explorer/timeline.tsx","./src/features/map/mappane.tsx","./src/features/map/styles.ts","./src/lib/format.ts","./src/lib/types.ts","./src/store/trip.ts","./vite.config.ts"],"version":"5.9.3"}

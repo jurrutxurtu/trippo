@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import json
+import os
 import sys
 from datetime import UTC, date, datetime, time, timedelta
 from pathlib import Path
@@ -218,6 +219,21 @@ def cmd_build(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_serve(args: argparse.Namespace) -> int:
+    import uvicorn
+
+    from trippo.api.app import app, load_capsule
+
+    root = Path(args.capsule)
+    trip = load_capsule(root)
+    print(f"[serve]    {trip.title}: {len(trip.days)} days, {len(trip.media)} media")
+    print(f"[serve]    http://127.0.0.1:{args.port}/api/trip")
+    if not os.environ.get("MAPTILER_KEY"):
+        print("[serve]    ! MAPTILER_KEY is not set; the map will fall back to OSM raster")
+    uvicorn.run(app, host="127.0.0.1", port=args.port, log_level="warning")
+    return 0
+
+
 def _enrich(trip, args: argparse.Namespace, tracks_by_id: dict) -> None:
     """Resolve place names. Never fatal -- providers are public and best-effort."""
     from trippo.domain.stats import compute_trip_stats
@@ -420,6 +436,11 @@ def main(argv: list[str] | None = None) -> int:
         help="generate thumbnails and web-sized copies into the capsule",
     )
     b.set_defaults(func=cmd_build)
+
+    s = sub.add_parser("serve", help="serve a capsule to the studio frontend")
+    s.add_argument("capsule", help="capsule directory")
+    s.add_argument("--port", type=int, default=8787)
+    s.set_defaults(func=cmd_serve)
 
     args = p.parse_args(argv)
     return int(args.func(args))
