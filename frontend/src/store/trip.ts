@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Trip, TripEvent, TrackGeometry, Day, MediaAsset } from "@/lib/types";
+import type { Trip, TripEvent, TrackGeometry, Day, MediaAsset, Finding } from "@/lib/types";
 import { ACTIVITY_TYPES } from "@/lib/types";
 
 /**
@@ -29,7 +29,24 @@ interface State {
   /** Events whose full photo set the user has revealed, beyond the suggested selection. */
   expandedPhotos: Set<string>;
 
+  /** Curation state. The server validates every operation and can reject it. */
+  canUndo: boolean;
+  canRedo: boolean;
+  dirty: boolean;
+  busy: boolean;
+  opError: string | null;
+  editing: boolean;
+  review: Finding[] | null;
+  aiAvailable: boolean;
+
   load: () => Promise<void>;
+  applyOp: (op: string, payload: Record<string, unknown>) => Promise<boolean>;
+  undo: () => Promise<void>;
+  redo: () => Promise<void>;
+  save: () => Promise<void>;
+  setEditing: (on: boolean) => void;
+  loadReview: () => Promise<void>;
+  dismissOpError: () => void;
   selectDay: (dayId: string | null) => void;
   selectEvent: (eventId: string | null) => void;
   back: () => void;
@@ -40,6 +57,22 @@ interface State {
   closeLightbox: () => void;
   stepLightbox: (delta: number) => void;
   toggleExpandedPhotos: (eventId: string) => void;
+}
+
+/** The server returns the whole trip plus what undo can do; mirror it verbatim. */
+function applyServerState(
+  set: (partial: Partial<State>) => void,
+  data: { trip: Trip; canUndo: boolean; canRedo: boolean; dirty: boolean },
+): void {
+  set({
+    trip: data.trip,
+    canUndo: data.canUndo,
+    canRedo: data.canRedo,
+    dirty: data.dirty,
+    busy: false,
+    // Findings are derived from the trip, so they are stale the moment it changes.
+    review: null,
+  });
 }
 
 export const useTrip = create<State>((set, get) => ({
@@ -54,6 +87,14 @@ export const useTrip = create<State>((set, get) => ({
   hoveredMediaId: null,
   lightbox: null,
   expandedPhotos: new Set<string>(),
+  canUndo: false,
+  canRedo: false,
+  dirty: false,
+  busy: false,
+  opError: null,
+  editing: false,
+  review: null,
+  aiAvailable: false,
 
   async load() {
     set({ loading: true, error: null });
@@ -61,12 +102,75 @@ export const useTrip = create<State>((set, get) => ({
       const res = await fetch("/api/trip");
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
       set({ trip: (await res.json()) as Trip, loading: false });
+      const health = await fetch("/api/health").then((r) => r.json());
+      set({ aiAvailable: !!health.aiAvailable });
     } catch (e) {
       set({
         error: e instanceof Error ? e.message : String(e),
         loading: false,
       });
     }
+  },
+
+  /**
+   * Apply one curation operation.
+   *
+   * The server is the authority: it applies, re-derives, checks invariants and returns
+   * the whole trip. The client never mutates the capsule itself, so it cannot drift from
+   * what is on disk, nor reach a state the backend would reject.
+   */
+  async applyOp(op, payload) {
+    set({ busy: true, opError: null });
+    try {
+      const res = await fetch("/api/ops", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ op, payload }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        set({
+          opError: body.detail ?? `${res.status} ${res.statusText}`,
+          busy: false,
+        });
+        return false;
+      }
+      applyServerState(set, await res.json());
+      return true;
+    } catch (e) {
+      set({ opError: e instanceof Error ? e.message : String(e), busy: false });
+      return false;
+    }
+  },
+
+  async undo() {
+    const res = await fetch("/api/undo", { method: "POST" });
+    if (res.ok) applyServerState(set, await res.json());
+  },
+
+  async redo() {
+    const res = await fetch("/api/redo", { method: "POST" });
+    if (res.ok) applyServerState(set, await res.json());
+  },
+
+  async save() {
+    const res = await fetch("/api/save", { method: "POST" });
+    if (res.ok) set({ dirty: false });
+  },
+
+  setEditing(on) {
+    set({ editing: on });
+  },
+
+  async loadReview() {
+    const res = await fetch("/api/review");
+    if (!res.ok) return;
+    const data = await res.json();
+    set({ review: data.findings as Finding[] });
+  },
+
+  dismissOpError() {
+    set({ opError: null });
   },
 
   selectDay(dayId) {

@@ -59,6 +59,14 @@ dev capsule:
 web:
     cd frontend && npm run dev
 
+# Self-contained HTML plus media/. Opens from disk, no server.
+export capsule out:
+    cd backend && .venv/Scripts/python.exe -m trippo.cli export "{{capsule}}" --out "{{out}}"
+
+# What is worth checking before calling a trip finished.
+review capsule:
+    cd backend && .venv/Scripts/python.exe -m trippo.cli review "{{capsule}}"
+
 serve capsule:
     cd backend && .venv/Scripts/python.exe -m trippo.cli serve "{{capsule}}"
 

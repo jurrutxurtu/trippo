@@ -219,6 +219,38 @@ def cmd_build(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_export(args: argparse.Namespace) -> int:
+    from trippo.capsule.export import export_html
+
+    root = Path(args.capsule)
+    trip = capsule_io.read(root)
+    out = Path(args.out)
+    print(f"[export]   {trip.title} -> {out.resolve()}", flush=True)
+    report = export_html(trip, root, out)
+    print(f"[export]   {report.summary()}")
+    print(f"[export]   open {(out / 'index.html').resolve()}")
+    return 0
+
+
+def cmd_review(args: argparse.Namespace) -> int:
+    from trippo.ai.coherence import Severity, check_trip
+
+    trip = capsule_io.read(Path(args.capsule))
+    findings = check_trip(trip)
+    if not findings:
+        print("Nothing to flag. The trip looks finished.")
+        return 0
+
+    marks = {Severity.BLOCKING: "!", Severity.WARNING: "~", Severity.INFO: "-"}
+    for f in findings:
+        print(f"  {marks[f.severity]} {f.message}")
+        if f.action:
+            print(f"      {f.action}")
+    blocking = sum(1 for f in findings if f.severity is Severity.BLOCKING)
+    print(f"\n{len(findings)} finding(s), {blocking} blocking")
+    return 0
+
+
 def cmd_serve(args: argparse.Namespace) -> int:
     import uvicorn
 
@@ -436,6 +468,15 @@ def main(argv: list[str] | None = None) -> int:
         help="generate thumbnails and web-sized copies into the capsule",
     )
     b.set_defaults(func=cmd_build)
+
+    x = sub.add_parser("export", help="write a self-contained HTML page")
+    x.add_argument("capsule", help="capsule directory")
+    x.add_argument("--out", required=True, help="output directory")
+    x.set_defaults(func=cmd_export)
+
+    r = sub.add_parser("review", help="what is worth checking before finishing")
+    r.add_argument("capsule", help="capsule directory")
+    r.set_defaults(func=cmd_review)
 
     s = sub.add_parser("serve", help="serve a capsule to the studio frontend")
     s.add_argument("capsule", help="capsule directory")

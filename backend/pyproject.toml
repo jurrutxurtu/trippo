@@ -44,6 +44,8 @@ ignore = ["B008", "RUF012"]
 [tool.ruff.lint.per-file-ignores]
 # HTML templating: long class strings are more readable unwrapped than folded.
 "scripts/make_prototypes.py" = ["E501", "RUF100"]
+# Same reasoning: HTML templating reads better unwrapped than folded.
+"trippo/capsule/export.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.12"

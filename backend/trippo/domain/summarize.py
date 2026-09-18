@@ -58,9 +58,10 @@ def summarize(trip: Trip) -> None:
         events = _active(trip, day)
         day.stats = _day_stats(trip, day, events)
         day.bbox = _day_bbox(trip, events)
-        if not day.title:
+        # A generated title must follow the events it was derived from; renaming the
+        # day's main event should rename the day. A hand-written one is never touched.
+        if not day.user_title:
             day.title = _day_title(trip, day, events)
-        if not day.subtitle:
             day.subtitle = _day_subtitle(events, day.title)
 
     _select_photos(trip)

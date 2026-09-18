@@ -223,3 +223,26 @@ export interface TrackGeometry {
   simplified: [number, number][];
   profile: { d: number; ele: number; lat: number; lon: number; t: number }[];
 }
+
+/** A coherence finding from /api/review. Mostly computed, not generated. */
+export interface Finding {
+  severity: "blocking" | "warning" | "info";
+  code: string;
+  message: string;
+  dayId: string | null;
+  eventId: string | null;
+  action: string | null;
+}
+
+/** Event types a user may choose. unknown is never chosen, only resolved away. */
+export const EDITABLE_TYPES: EventType[] = [
+  "visit",
+  "stop",
+  "overnight",
+  "hike",
+  "walk",
+  "bike",
+  "drive",
+  "ferry",
+  "flight",
+];

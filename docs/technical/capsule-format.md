@@ -1,6 +1,6 @@
 # Capsule format
 
-`SCHEMA_VERSION = "0.3.0"` — defined in `backend/trippo/capsule/version.py`.
+`SCHEMA_VERSION = "0.4.0"` — defined in `backend/trippo/capsule/version.py`.
 
 A capsule is a **directory-as-document**: portable, diffable, inspectable, git-able, and trivially
 uploadable later. No database. See ADR-0003.

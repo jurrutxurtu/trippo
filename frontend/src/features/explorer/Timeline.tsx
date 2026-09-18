@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTrip, selectedDay, selectedEvent, dayEvents, spanningEvents } from "@/store/trip";
 import {
   TYPE_META,
@@ -12,6 +13,9 @@ import {
 import type { Day, Trip, TripEvent } from "@/lib/types";
 import { ActivityPanel } from "@/features/activity/ActivityPanel";
 import { PhotoStrip } from "@/components/PhotoStrip";
+import { EventEditor, GapResolver } from "@/features/curate/EventEditor";
+import { ReviewPanel } from "@/features/curate/ReviewPanel";
+import { Toolbar } from "@/features/curate/Toolbar";
 
 /** The left pane. Collapsed days at trip scope, expanded events at day scope. */
 export function Timeline() {
@@ -19,16 +23,35 @@ export function Timeline() {
   const { trip, scope } = state;
   const day = selectedDay(state);
   const event = selectedEvent(state);
+  const [tab, setTab] = useState<"days" | "review">("days");
   if (!trip) return null;
 
   return (
     <div className="flex h-full flex-col bg-white">
+      <Toolbar />
       <Header trip={trip} />
+      {scope === "trip" && (
+        <div className="flex shrink-0 gap-1 border-b border-zinc-200 px-5 py-1.5">
+          {(["days", "review"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`rounded px-2.5 py-1 text-[11px] font-medium capitalize ${
+                tab === t ? "bg-zinc-900 text-white" : "text-zinc-500 hover:bg-zinc-100"
+              }`}
+            >
+              {t === "review" ? "Review" : "Itinerary"}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="min-h-0 flex-1 overflow-y-auto">
         {scope === "activity" && event ? (
           <ActivityPanel event={event} />
         ) : day ? (
           <DayDetail trip={trip} day={day} />
+        ) : tab === "review" ? (
+          <ReviewPanel />
         ) : (
           <DayList trip={trip} />
         )}
@@ -139,6 +162,7 @@ function DayDetail({ trip, day }: { trip: Trip; day: Day }) {
   const spanning = spanningEvents(trip, day);
   const select = useTrip((s) => s.selectEvent);
   const selectDay = useTrip((s) => s.selectDay);
+  const editing = useTrip((s) => s.editing);
 
   return (
     <div>
@@ -180,7 +204,14 @@ function DayDetail({ trip, day }: { trip: Trip; day: Day }) {
 
         <ol className="space-y-1.5">
           {events.map((e) => (
-            <EventRow key={e.id} trip={trip} event={e} onSelect={() => select(e.id)} />
+            <div key={e.id}>
+              <EventRow trip={trip} event={e} onSelect={() => select(e.id)} />
+              {editing && (
+                <div className="mb-2 rounded-lg border border-zinc-200 bg-zinc-50">
+                  <EventEditor event={e} />
+                </div>
+              )}
+            </div>
           ))}
         </ol>
       </div>
@@ -213,6 +244,8 @@ function EventRow({
           {event.media_ids.length > 0 &&
             ` ${event.media_ids.length} photographs fall inside it.`}
         </p>
+        <GapResolver event={event} />
+        <PhotoStrip trip={trip} event={event} columns={6} compact />
       </li>
     );
   }

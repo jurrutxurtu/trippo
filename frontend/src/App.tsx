@@ -3,6 +3,7 @@ import { useTrip } from "@/store/trip";
 import { Timeline } from "@/features/explorer/Timeline";
 import { MapPane } from "@/features/map/MapPane";
 import { Lightbox } from "@/components/Lightbox";
+import { OpError } from "@/features/curate/Toolbar";
 
 /**
  * The capsule explorer: timeline left, map right, one shared selection.
@@ -11,7 +12,8 @@ import { Lightbox } from "@/components/Lightbox";
  * see docs/product/ux-flows.md §"Capsule explorer".
  */
 export default function App() {
-  const { load, loading, error, trip, back, scope, lightbox } = useTrip();
+  const { load, loading, error, trip, back, scope, lightbox, editing, undo, redo } =
+    useTrip();
 
   useEffect(() => {
     void load();
@@ -22,10 +24,16 @@ export default function App() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && !lightbox && scope !== "trip") back();
+      if (!editing) return;
+      const mod = e.ctrlKey || e.metaKey;
+      if (mod && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        void (e.shiftKey ? redo() : undo());
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [back, scope, lightbox]);
+  }, [back, scope, lightbox, editing, undo, redo]);
 
   if (loading) {
     return (
@@ -58,6 +66,7 @@ export default function App() {
         <MapPane />
       </main>
       <Lightbox />
+      <OpError />
     </div>
   );
 }

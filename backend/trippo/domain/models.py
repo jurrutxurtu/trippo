@@ -15,7 +15,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-SCHEMA_VERSION = "0.3.0"
+SCHEMA_VERSION = "0.4.0"
 
 
 class _Base(BaseModel):
@@ -353,6 +353,9 @@ class Day(_Base):
     excluded: bool = False
     title: str | None = None
     subtitle: str | None = None
+    #: True when the user wrote the title. Generated titles are refreshed whenever the
+    #: events change; a hand-written one never is.
+    user_title: bool = False
     note: str | None = None
     #: Events *owned* by this day (their local start date falls here).
     event_ids: list[str] = Field(default_factory=list)

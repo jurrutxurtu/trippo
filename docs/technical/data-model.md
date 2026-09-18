@@ -3,7 +3,7 @@
 
 # Data model (generated)
 
-Capsule schema version **0.3.0**.
+Capsule schema version **0.4.0**.
 
 This document is generated from the Pydantic models in `backend/trippo/domain/models.py`.
 For the prose contract -- layout on disk, portability rules, invariants and migrations --
@@ -19,7 +19,7 @@ see [`capsule-format.md`](capsule-format.md).
 | `ActivityStats` | 10 | Telemetry. Lives ONLY on track-bearing activity events -- never on a trip. |
 | `BBox` | 4 | Geographic bounds, for fitting a map. (min_lat, min_lon, max_lat, max_lon). |
 | `DateRange` | 2 |  |
-| `Day` | 12 |  |
+| `Day` | 13 |  |
 | `DayCoverage` | 4 |  |
 | `DayStats` | 7 | Per-day figures for the timeline heading. |
 | `Event` | 22 |  |
@@ -125,6 +125,7 @@ Geographic bounds, for fitting a map. (min_lat, min_lon, max_lat, max_lon).
 | `excluded` | `boolean` | no |  |
 | `title` | `string` \| `null` | no |  |
 | `subtitle` | `string` \| `null` | no |  |
+| `user_title` | `boolean` | no |  |
 | `note` | `string` \| `null` | no |  |
 | `event_ids` | array of `string` | no |  |
 | `spanning_event_ids` | array of `string` | no |  |

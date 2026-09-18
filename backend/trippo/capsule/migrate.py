@@ -53,10 +53,22 @@ def _v020_to_v030(payload: dict[str, Any]) -> dict[str, Any]:
     return payload
 
 
+def _v030_to_v040(payload: dict[str, Any]) -> dict[str, Any]:
+    """0.3.0 -> 0.4.0: Day.user_title.
+
+    Existing titles were all generated, so False is the correct default: they will be
+    refreshed from the events on the next derivation, which is what we want.
+    """
+    for day in payload.get("days", []):
+        day.setdefault("user_title", False)
+    return payload
+
+
 #: version -> (next_version, migration). Applied in order on read.
 MIGRATIONS: dict[str, tuple[str, Migration]] = {
     "0.1.0": ("0.2.0", _v010_to_v020),
     "0.2.0": ("0.3.0", _v020_to_v030),
+    "0.3.0": ("0.4.0", _v030_to_v040),
 }
 
 

@@ -118,10 +118,8 @@ def enrich_trip(
     # after every place has been resolved.
     _label_transits(trip)
 
-    # Names have changed, so day titles and subtitles derived from them are now stale.
-    for day in trip.days:
-        day.title = None
-        day.subtitle = None
+    # Names have changed, so any generated day title derived from them is now stale.
+    # summarize() refreshes those and leaves hand-written ones alone.
     summarize(trip)
 
     report.cache_hits = cache.hits
