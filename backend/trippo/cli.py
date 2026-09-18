@@ -17,6 +17,7 @@ from datetime import UTC, date, datetime, time, timedelta
 from pathlib import Path
 
 from trippo.capsule import io as capsule_io
+from trippo.config.env import describe, load_env
 from trippo.domain.models import (
     EventStatus,
     EventType,
@@ -261,7 +262,9 @@ def cmd_serve(args: argparse.Namespace) -> int:
     print(f"[serve]    {trip.title}: {len(trip.days)} days, {len(trip.media)} media")
     print(f"[serve]    http://127.0.0.1:{args.port}/api/trip")
     if not os.environ.get("MAPTILER_KEY"):
-        print("[serve]    ! MAPTILER_KEY is not set; the map will fall back to OSM raster")
+        print("[serve]    ! MAPTILER_KEY not set -- the map falls back to OSM raster")
+    if not os.environ.get("GEMINI_API_KEY"):
+        print("[serve]    ! GEMINI_API_KEY not set -- AI suggestions are hidden")
     uvicorn.run(app, host="127.0.0.1", port=args.port, log_level="warning")
     return 0
 
@@ -443,6 +446,11 @@ def _force_utf8_stdout() -> None:
 
 def main(argv: list[str] | None = None) -> int:
     _force_utf8_stdout()
+    # Keys come from the environment or from backend/.env. Do this before anything reads
+    # os.environ, so --enrich and the AI endpoints see them.
+    present = load_env()
+    if any(present.values()):
+        print(f"[env]      {describe(present)}")
     p = argparse.ArgumentParser(prog="trippo", description="Trippo travel memory studio")
     sub = p.add_subparsers(dest="command", required=True)
 

@@ -146,6 +146,8 @@ export interface Day {
   excluded: boolean;
   title: string | null;
   subtitle: string | null;
+  /** True when the user wrote the title; generated ones are refreshed as events change. */
+  user_title: boolean;
   note: string | null;
   event_ids: string[];
   /** Multi-day events owned by an earlier day that continue through this one. */

@@ -16,6 +16,8 @@ import { PhotoStrip } from "@/components/PhotoStrip";
 import { EventEditor, GapResolver } from "@/features/curate/EventEditor";
 import { ReviewPanel } from "@/features/curate/ReviewPanel";
 import { Toolbar } from "@/features/curate/Toolbar";
+import { TitleSuggester } from "@/features/curate/TitleSuggester";
+import { DayEditor } from "@/features/curate/DayEditor";
 
 /** The left pane. Collapsed days at trip scope, expanded events at day scope. */
 export function Timeline() {
@@ -180,6 +182,12 @@ function DayDetail({ trip, day }: { trip: Trip; day: Day }) {
           Day {day.index} &middot; {formatDate(day.date, "long")}
         </p>
         {day.subtitle && <p className="mt-1 text-[11px] text-zinc-400">{day.subtitle}</p>}
+        {editing && (
+          <>
+            <DayEditor day={day} />
+            <TitleSuggester dayId={day.id} current={day.title ?? ""} />
+          </>
+        )}
       </div>
 
       <div className="px-6 py-4">
