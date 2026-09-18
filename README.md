@@ -32,7 +32,17 @@ python -m trippo.cli build \
 
 Every source is optional. A trip can be built from photos alone.
 
-### Explore it
+### Or do all of it in the browser
+
+`ash
+just serve      # backend; no capsule argument needed
+just web        # http://localhost:5173
+`
+
+Trip library -> **New trip** -> **Choose folder...** (a native dialog, because the backend
+runs on your machine) -> watch the import -> read the coverage report -> explore and curate.
+
+### Explore an existing capsule
 
 `ash
 # terminal 1 -- serve the capsule

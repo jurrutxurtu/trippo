@@ -50,10 +50,10 @@ fixture timeline gpx:
     cd backend && .venv/Scripts/python.exe scripts/make_fixture.py \
         --timeline "{{timeline}}" --gpx "{{gpx}}" --out ../fixtures/golden/ireland-2023
 
-# Serve a capsule and run the studio frontend together.
-dev capsule:
-    @echo "backend  http://127.0.0.1:8787   frontend http://localhost:5173"
-    cd backend && .venv/Scripts/python.exe -m trippo.cli serve "{{capsule}}"
+# Reminder of the two commands you actually need.
+dev:
+    @echo "  just serve     backend  http://127.0.0.1:8787"
+    @echo "  just web       studio   http://localhost:5173"
 
 # Frontend only (expects just serve in another terminal).
 web:
@@ -67,8 +67,9 @@ export capsule out:
 review capsule:
     cd backend && .venv/Scripts/python.exe -m trippo.cli review "{{capsule}}"
 
-serve capsule:
-    cd backend && .venv/Scripts/python.exe -m trippo.cli serve "{{capsule}}"
+# Run the backend. With no argument it opens the trip library.
+serve capsule="":
+    cd backend && .venv/Scripts/python.exe -m trippo.cli serve {{capsule}}
 
 # Regenerate the design prototypes from a built capsule, and copy its thumbnails
 # alongside them so the pages resolve <img> without a server.

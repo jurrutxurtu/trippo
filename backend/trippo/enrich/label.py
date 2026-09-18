@@ -43,7 +43,7 @@ from trippo.domain.models import (
     Trip,
 )
 from trippo.domain.summarize import summarize
-from trippo.enrich.cache import GeocodeCache, cache_key
+from trippo.enrich.cache import CACHE_SCHEMA, GeocodeCache, cache_key
 from trippo.enrich.rank import RankContext, best
 from trippo.ports.geocoder import GeocodeQuery, Geocoder, PlaceCandidate
 
@@ -60,12 +60,14 @@ class EnrichReport:
     contested: int = 0
     cache_hits: int = 0
     cache_misses: int = 0
+    notes_places: int = 0
     provider_failures: dict[str, int] = field(default_factory=dict)
     degradations: list[str] = field(default_factory=list)
 
     def summary(self) -> str:
         return (
-            f"{self.named} named, {self.unresolved} unresolved, "
+            (f"{self.notes_places} exact from Places, " if self.notes_places else "")
+            + f"{self.named} named, {self.unresolved} unresolved, "
             f"{self.contested} contested, {self.user_locked} user-locked "
             f"(cache {self.cache_hits} hits / {self.cache_misses} misses)"
         )
@@ -77,6 +79,7 @@ def enrich_trip(
     cache: GeocodeCache,
     *,
     deep_lookup=None,
+    places=None,
     progress: ProgressFn | None = None,
 ) -> EnrichReport:
     """Name every event that needs and deserves a name. Mutates `trip` in place.
@@ -94,6 +97,11 @@ def enrich_trip(
 
     targets = [e for e in trip.events if _needs_name(e, report)]
     report.events_considered = len(targets)
+
+    # Exact resolution first, where Google already handed us its own place id. A direct
+    # lookup beats guessing between fifteen nearby features (ADR-0008).
+    remaining = _resolve_place_ids(targets, places, cache, report, progress)
+    targets = remaining
 
     plans = [(e, _query_points(e, _radius_for(e))) for e in targets]
     resolved = _resolve_all(
@@ -130,6 +138,57 @@ def enrich_trip(
             report.provider_failures[p.name] = failures
     _degradations(report, providers)
     return report
+
+
+def _resolve_place_ids(
+    targets: list[Event],
+    places,
+    cache: GeocodeCache,
+    report: EnrichReport,
+    progress: ProgressFn | None,
+) -> list[Event]:
+    """Name what we can exactly, and return whatever is left for the free cascade."""
+    if places is None or not getattr(places, "available", False):
+        return targets
+
+    with_ids = [e for e in targets if e.place and e.place.google_place_id]
+    if not with_ids:
+        return targets
+
+    resolved: set[str] = set()
+    for i, e in enumerate(with_ids, start=1):
+        if progress:
+            progress(i, len(with_ids), "google places")
+        pid = e.place.google_place_id  # type: ignore[union-attr]
+        key = f"v{CACHE_SCHEMA}:places:{pid}"
+        cached = cache.get(key)
+        if cached is None:
+            candidate = places.resolve(pid)
+            cache.put(key, "google", [candidate] if candidate else [])
+        else:
+            candidate = cached[0] if cached else None
+        if candidate is None:
+            continue
+
+        e.place = Place(
+            name=candidate.name,
+            lat=e.place.lat if e.place else candidate.lat,  # type: ignore[union-attr]
+            lon=e.place.lon if e.place else candidate.lon,  # type: ignore[union-attr]
+            address=candidate.address,
+            google_place_id=pid,
+            category=candidate.kind,
+            source=PlaceSource.GOOGLE,
+            confidence=PLACE_CONFIDENCE_CLEAR,
+        )
+        if not e.title:
+            e.title = candidate.name
+        e.provenance.rules.append("named from Google Places (exact id lookup)")
+        report.named += 1
+        resolved.add(e.id)
+
+    if resolved:
+        report.notes_places = len(resolved)
+    return [e for e in targets if e.id not in resolved]
 
 
 def _point_key(q: GeocodeQuery) -> tuple:

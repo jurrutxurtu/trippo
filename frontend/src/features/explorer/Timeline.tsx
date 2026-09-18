@@ -18,6 +18,8 @@ import { ReviewPanel } from "@/features/curate/ReviewPanel";
 import { Toolbar } from "@/features/curate/Toolbar";
 import { TitleSuggester } from "@/features/curate/TitleSuggester";
 import { DayEditor } from "@/features/curate/DayEditor";
+import { FindNearby } from "@/features/curate/FindNearby";
+import { PhotoPicker } from "@/features/curate/PhotoPicker";
 
 /** The left pane. Collapsed days at trip scope, expanded events at day scope. */
 export function Timeline() {
@@ -165,6 +167,11 @@ function DayDetail({ trip, day }: { trip: Trip; day: Day }) {
   const select = useTrip((s) => s.selectEvent);
   const selectDay = useTrip((s) => s.selectDay);
   const editing = useTrip((s) => s.editing);
+  const applyOp = useTrip((s) => s.applyOp);
+  const [showHidden, setShowHidden] = useState(false);
+  const hidden = day.event_ids
+    .map((i) => trip.events.find((e) => e.id === i))
+    .filter((e): e is NonNullable<typeof e> => !!e && e.status === "suppressed");
 
   return (
     <div>
@@ -210,6 +217,35 @@ function DayDetail({ trip, day }: { trip: Trip; day: Day }) {
           </p>
         )}
 
+        {hidden.length > 0 && (
+          <button
+            onClick={() => setShowHidden(!showHidden)}
+            className="mb-2 w-full rounded-lg border border-dashed border-zinc-300 py-1.5 text-[11px] font-medium text-zinc-500 hover:border-zinc-400 hover:text-zinc-700"
+          >
+            {showHidden ? "Hide" : "Show"} {hidden.length} minor stops Trippo set aside
+          </button>
+        )}
+        {showHidden &&
+          hidden.map((e) => (
+            <div
+              key={e.id}
+              className="mb-1.5 flex items-center justify-between rounded-lg bg-zinc-50 px-3 py-2"
+            >
+              <span className="min-w-0 flex-1 truncate text-[11px] text-zinc-500">
+                {eventName(e)}
+                <span className="ml-2 text-zinc-400">{e.suppress_reason}</span>
+              </span>
+              {editing && (
+                <button
+                  onClick={() => void applyOp("restore_event", { event_id: e.id })}
+                  className="shrink-0 text-[11px] font-medium text-indigo-600 hover:underline"
+                >
+                  Keep it
+                </button>
+              )}
+            </div>
+          ))}
+
         <ol className="space-y-1.5">
           {events.map((e) => (
             <div key={e.id}>
@@ -217,6 +253,10 @@ function DayDetail({ trip, day }: { trip: Trip; day: Day }) {
               {editing && (
                 <div className="mb-2 rounded-lg border border-zinc-200 bg-zinc-50">
                   <EventEditor event={e} />
+                  <div className="border-t border-zinc-200 px-5 py-4">
+                    <PhotoPicker trip={trip} event={e} />
+                    <FindNearby event={e} />
+                  </div>
                 </div>
               )}
             </div>

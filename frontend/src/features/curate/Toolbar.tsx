@@ -1,4 +1,5 @@
 import { useTrip } from "@/store/trip";
+import { useApp } from "@/store/app";
 
 /**
  * Edit-mode chrome: toggle, undo/redo, save, and the review count.
@@ -26,6 +27,16 @@ export function Toolbar() {
   return (
     <div className="flex shrink-0 items-center justify-between border-b border-zinc-200 bg-white px-5 py-2">
       <div className="flex items-center gap-2">
+        <button
+          onClick={() => {
+            if (dirty && !confirm("You have unsaved changes. Leave anyway?")) return;
+            useApp.getState().go("library");
+            void useApp.getState().loadLibrary();
+          }}
+          className="rounded-lg px-2 py-1.5 text-xs font-medium text-zinc-500 hover:bg-zinc-100"
+        >
+          &larr; Trips
+        </button>
         <button
           onClick={() => setEditing(!editing)}
           className={`rounded-lg px-3 py-1.5 text-xs font-medium ${

@@ -1,7 +1,7 @@
 """Local HTTP API. Thin: validate, delegate, serialise.
 
-Serves one capsule at a time to the SPA on the adjacent Vite port. No auth, no database,
-no sessions -- this is a single-user process on localhost (ADR-0001).
+Serves the capsule library and one open capsule to the SPA. No auth, no database, no
+sessions -- this is a single-user process on localhost (ADR-0001).
 
 Media are served as static files straight from the capsule's derivative folders, so the
 browser never sees an original and never holds 8 GB in memory.
@@ -9,13 +9,15 @@ browser never sees an original and never holds 8 GB in memory.
 
 from __future__ import annotations
 
+import json
 import mimetypes
 import os
+from datetime import date as _date
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -28,9 +30,8 @@ from trippo.domain.models import Trip
 mimetypes.add_type("image/webp", ".webp")
 mimetypes.add_type("image/avif", ".avif")
 
-app = FastAPI(title="Trippo", version="0.3.0")
+app = FastAPI(title="Trippo", version="0.4.0")
 
-# The SPA runs on Vite's dev server during development; same-origin in production.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -38,7 +39,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-_STATE: dict[str, object] = {"root": None, "trip": None, "session": None}
+_STATE: dict[str, object] = {"root": None, "session": None}
 
 
 def load_capsule(root: Path) -> Trip:
@@ -46,7 +47,6 @@ def load_capsule(root: Path) -> Trip:
 
     trip = capsule_io.read(root)
     _STATE["root"] = root
-    _STATE["trip"] = trip
     _STATE["session"] = CurationSession(trip=trip, root=root)
     _mount_media(root)
     return trip
@@ -58,51 +58,20 @@ def _mount_media(root: Path) -> None:
         folder = root / name
         folder.mkdir(parents=True, exist_ok=True)
         route = f"/{name}"
-        # Re-mounting on reload is fine; drop any previous mount for the same path.
-        app.routes[:] = [
-            r for r in app.routes if getattr(r, "path", None) != route
-        ]
+        # Opening a different capsule replaces the mount rather than stacking one.
+        app.routes[:] = [r for r in app.routes if getattr(r, "path", None) != route]
         app.mount(route, StaticFiles(directory=str(folder)), name=name)
-
-
-def _trip() -> Trip:
-    session = _STATE.get("session")
-    if session is not None:
-        return session.trip  # type: ignore[attr-defined,no-any-return]
-    trip = _STATE.get("trip")
-    if trip is None:
-        raise HTTPException(status_code=404, detail="No capsule is loaded.")
-    return trip  # type: ignore[return-value]
-
-
-@app.get("/api/health")
-def health() -> dict:
-    root = _STATE.get("root")
-    return {
-        "status": "ok",
-        "capsule": str(root) if root else None,
-        "mapTilerKey": os.environ.get("MAPTILER_KEY", ""),
-        "aiAvailable": bool(os.environ.get("GEMINI_API_KEY")),
-    }
-
-
-@app.get("/api/trip")
-def get_trip() -> JSONResponse:
-    """The whole capsule. ~2 MB for a 27-day trip -- small enough to send at once,
-    and far simpler than paginating something the explorer needs in full anyway."""
-    return JSONResponse(_trip().model_dump(mode="json", by_alias=False))
-
-
-class OpRequest(BaseModel):
-    op: str
-    payload: dict = {}
 
 
 def _session():
     s = _STATE.get("session")
     if s is None:
-        raise HTTPException(status_code=404, detail="No capsule is loaded.")
+        raise HTTPException(status_code=404, detail="No capsule is open.")
     return s
+
+
+def _trip() -> Trip:
+    return _session().trip  # type: ignore[no-any-return]
 
 
 def _session_state(session) -> dict:
@@ -113,6 +82,241 @@ def _session_state(session) -> dict:
         "canRedo": session.can_redo,
         "dirty": session.dirty,
     }
+
+
+# ============================================================================ health
+
+
+@app.get("/api/health")
+def health() -> dict:
+    root = _STATE.get("root")
+    return {
+        "status": "ok",
+        "capsule": str(root) if root else None,
+        "capsuleOpen": _STATE.get("session") is not None,
+        "mapTilerKey": os.environ.get("MAPTILER_KEY", ""),
+        "aiAvailable": bool(os.environ.get("GEMINI_API_KEY")),
+        "placesAvailable": bool(os.environ.get("GOOGLE_PLACES_API_KEY")),
+    }
+
+
+# ============================================================================ library
+
+
+@app.get("/api/capsules")
+def list_capsules() -> JSONResponse:
+    from trippo.service import library
+
+    return JSONResponse(
+        {
+            "workspace": str(library.workspace()),
+            "capsules": [c.as_dict for c in library.list_capsules()],
+        }
+    )
+
+
+@app.post("/api/capsules/{capsule_id}/open")
+def open_capsule(capsule_id: str) -> JSONResponse:
+    from trippo.service import library
+
+    try:
+        root = library.resolve(capsule_id)
+    except (FileNotFoundError, ValueError) as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    trip = load_capsule(root)
+    return JSONResponse({"opened": capsule_id, "title": trip.title})
+
+
+@app.delete("/api/capsules/{capsule_id}")
+def delete_capsule(capsule_id: str) -> JSONResponse:
+    from trippo.service import library
+
+    try:
+        library.delete(capsule_id)
+    except (FileNotFoundError, ValueError) as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return JSONResponse({"deleted": capsule_id})
+
+
+# ============================================================================ creation
+
+
+class BrowseRequest(BaseModel):
+    kind: str = "folder"
+    title: str = "Choose a folder"
+
+
+@app.post("/api/browse")
+def browse(req: BrowseRequest) -> JSONResponse:
+    """Open a native picker on the machine running the backend.
+
+    A browser cannot give us a real path, and streaming 8 GB through fetch to avoid that
+    would defeat the whole premise. The backend is local, so it asks the desktop. The UI
+    falls back to a paste-a-path field when this returns nothing.
+    """
+    from trippo.service.jobs import pick_file, pick_folder
+
+    path = pick_folder(req.title) if req.kind == "folder" else pick_file(req.title)
+    return JSONResponse({"path": path})
+
+
+class ProposeRequest(BaseModel):
+    media: list[str] = []
+
+
+@app.post("/api/propose-dates")
+def propose(req: ProposeRequest) -> JSONResponse:
+    """Guess the trip's dates from photo timestamps, without a full ingest."""
+    from trippo.service.build import propose_dates
+
+    found = propose_dates([Path(p) for p in req.media if p])
+    if not found:
+        return JSONResponse({"start": None, "end": None})
+    return JSONResponse({"start": found[0].isoformat(), "end": found[1].isoformat()})
+
+
+class CreateRequest(BaseModel):
+    title: str
+    description: str | None = None
+    timeline: str | None = None
+    gpx: str | None = None
+    media: list[str] = []
+    date_from: str | None = None
+    date_to: str | None = None
+    enrich: bool = True
+    derivatives: bool = True
+
+
+@app.post("/api/capsules")
+def create_capsule(req: CreateRequest) -> JSONResponse:
+    """Start an ingest. Returns immediately with a job to watch over SSE."""
+    from trippo.service import jobs, library
+    from trippo.service.build import BuildRequest
+
+    if not (req.timeline or req.gpx or req.media):
+        raise HTTPException(status_code=400, detail="Add at least one source.")
+
+    out = library.unique_path(req.title)
+    job = jobs.start(
+        BuildRequest(
+            title=req.title.strip() or "Untitled trip",
+            description=req.description,
+            out=out,
+            timeline=Path(req.timeline) if req.timeline else None,
+            gpx=Path(req.gpx) if req.gpx else None,
+            media=[Path(p) for p in req.media if p],
+            date_from=_date.fromisoformat(req.date_from) if req.date_from else None,
+            date_to=_date.fromisoformat(req.date_to) if req.date_to else None,
+            enrich=req.enrich,
+            derivatives=req.derivatives,
+        )
+    )
+    return JSONResponse({"jobId": job.id, "capsuleId": out.name})
+
+
+@app.get("/api/jobs/{job_id}")
+def job_status(job_id: str) -> JSONResponse:
+    from trippo.service import jobs
+
+    job = jobs.get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Unknown job")
+    return JSONResponse(
+        {
+            "id": job.id,
+            "status": job.status,
+            "error": job.error,
+            "capsuleId": job.capsule_id,
+            "events": [e.as_dict for e in job.events],
+        }
+    )
+
+
+@app.get("/api/jobs/{job_id}/stream")
+def job_stream(job_id: str) -> StreamingResponse:
+    """Progress as server-sent events. A seven-minute spinner tells the user nothing."""
+    from trippo.service import jobs
+
+    job = jobs.get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Unknown job")
+
+    def gen():
+        for ev in job.drain():
+            yield f"data: {json.dumps(ev.as_dict)}\n\n"
+        payload = {
+            "status": job.status,
+            "error": job.error,
+            "capsuleId": job.capsule_id,
+        }
+        yield f"event: end\ndata: {json.dumps(payload)}\n\n"
+
+    return StreamingResponse(
+        gen(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+# ============================================================================ the capsule
+
+
+@app.get("/api/trip")
+def get_trip() -> JSONResponse:
+    """The whole capsule. ~2 MB for a 27-day trip -- small enough to send at once, and
+    far simpler than paginating something the explorer needs in full anyway."""
+    return JSONResponse(_trip().model_dump(mode="json"))
+
+
+@app.get("/api/report")
+def ingestion_report() -> JSONResponse:
+    """Per-day coverage and degradations, shown BEFORE the itinerary.
+
+    This is what turns "why is day 3 empty?" into "day 3 has no data, and here is why".
+    """
+    trip = _trip()
+    return JSONResponse(
+        {
+            "sources": [
+                {
+                    "kind": s.kind.value,
+                    "name": s.display_name,
+                    "format": s.detected_format,
+                    "report": s.report.model_dump(mode="json") if s.report else None,
+                }
+                for s in trip.sources
+            ],
+            "coverage": [c.model_dump(mode="json") for c in trip.stats.coverage],
+            "degradations": [
+                d for s in trip.sources if s.report for d in s.report.degradations
+            ],
+        }
+    )
+
+
+@app.get("/api/tracks/{track_id}")
+def get_track(track_id: str) -> FileResponse:
+    """Simplified geometry and the resampled elevation profile, loaded on demand.
+
+    Kept out of /api/trip because a single track is ~2 MB of points and only matters once
+    the user opens that activity.
+    """
+    trip = _trip()
+    track = trip.track_by_id(track_id)
+    if track is None or not track.simplified_ref:
+        raise HTTPException(status_code=404, detail=f"Unknown track {track_id}")
+    path = Path(str(_STATE["root"])) / track.simplified_ref
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Track geometry was not written.")
+    return FileResponse(path, media_type="application/json")
+
+
+# ============================================================================ curation
+
+
+class OpRequest(BaseModel):
+    op: str
+    payload: dict = {}
 
 
 @app.post("/api/ops")
@@ -159,6 +363,46 @@ def save() -> JSONResponse:
     return JSONResponse({"saved": True, "dirty": session.dirty})
 
 
+@app.get("/api/events/{event_id}/nearby")
+def nearby_media(event_id: str, minutes: int = 45) -> JSONResponse:
+    """Photographs taken around an event, for attaching in bulk.
+
+    Searches the unassigned pool first -- those have no home -- then everything else, so
+    the user can see what is already attached elsewhere before stealing it.
+    """
+    from datetime import timedelta
+
+    trip = _trip()
+    event = trip.event_by_id(event_id)
+    if event is None:
+        raise HTTPException(status_code=404, detail="Unknown event")
+
+    window = timedelta(minutes=max(1, min(minutes, 240)))
+    lo, hi = event.start - window, event.end + window
+    owned = {m for e in trip.events for m in e.media_ids}
+    pool = set(trip.unassigned_media_ids)
+
+    out = []
+    for m in trip.media:
+        if m.captured_at is None or not (lo <= m.captured_at <= hi):
+            continue
+        if m.id in event.media_ids:
+            continue
+        owner = next((e for e in trip.events if m.id in e.media_ids), None)
+        out.append(
+            {
+                "id": m.id,
+                "thumb": m.thumb_ref,
+                "capturedAt": m.captured_at.isoformat(),
+                "unassigned": m.id in pool,
+                "ownerEventId": owner.id if owner else None,
+                "ownerTitle": owner.title if owner else None,
+            }
+        )
+    out.sort(key=lambda x: (not x["unassigned"], x["capturedAt"]))
+    return JSONResponse({"window": minutes, "candidates": out, "totalOwned": len(owned)})
+
+
 @app.get("/api/review")
 def review() -> JSONResponse:
     """Everything worth checking before calling a trip finished.
@@ -184,6 +428,9 @@ def review() -> JSONResponse:
             "blocking": sum(1 for f in findings if f.severity.value == "blocking"),
         }
     )
+
+
+# ============================================================================ ai
 
 
 class SuggestRequest(BaseModel):
@@ -215,27 +462,8 @@ def suggest(req: SuggestRequest) -> JSONResponse:
 
     if result is None:
         return JSONResponse(
-            status_code=200,
-            content={"ok": False, "reason": "No usable suggestion was produced."},
+            {"ok": False, "reason": "No usable suggestion was produced."}
         )
     return JSONResponse(
         {"ok": True, "value": result.value, "alternatives": result.alternatives}
     )
-
-
-@app.get("/api/tracks/{track_id}")
-def get_track(track_id: str) -> FileResponse:
-    """Simplified geometry and the resampled elevation profile, loaded on demand.
-
-    Kept out of /api/trip because a single track is ~2 MB of points and only matters once
-    the user opens that activity.
-    """
-    trip = _trip()
-    track = trip.track_by_id(track_id)
-    if track is None or not track.simplified_ref:
-        raise HTTPException(status_code=404, detail=f"Unknown track {track_id}")
-    root = _STATE["root"]
-    path = Path(str(root)) / track.simplified_ref
-    if not path.exists():
-        raise HTTPException(status_code=404, detail="Track geometry was not written.")
-    return FileResponse(path, media_type="application/json")

@@ -105,6 +105,7 @@ export interface TripEvent {
   day_id: string | null;
   type: EventType;
   status: EventStatus;
+  suppress_reason: string | null;
   start: string;
   end: string;
   utc_offset_minutes: number | null;
@@ -203,6 +204,7 @@ export interface TripStats {
   unaccounted_hours: number;
   unaccounted_count: number;
   days_blind: number;
+  coverage: DayCoverage[];
 }
 
 export interface Trip {
@@ -215,6 +217,9 @@ export interface Trip {
   events: TripEvent[];
   tracks: TrackMeta[];
   media: MediaAsset[];
+  /** Photographs and tracks belonging to no event. Never empty by accident. */
+  unassigned_media_ids: string[];
+  unassigned_track_ids: string[];
   bbox: BBox | null;
   route: RouteSegment[];
   stats: TripStats;
@@ -248,3 +253,51 @@ export const EDITABLE_TYPES: EventType[] = [
   "ferry",
   "flight",
 ];
+// --------------------------------------------------------------- library & creation
+
+export interface CapsuleSummary {
+  id: string;
+  title: string;
+  path: string;
+  start: string | null;
+  end: string | null;
+  dayCount: number;
+  photoCount: number;
+  unaccountedCount: number;
+  cover: string | null;
+  modified: string;
+}
+
+export interface JobEvent {
+  stage: string;
+  message: string;
+  done: number;
+  total: number;
+}
+
+export interface DayCoverage {
+  date: string;
+  timeline_records: number;
+  media_count: number;
+  track_count: number;
+}
+
+/** The per-day coverage matrix, shown before the itinerary rather than after. */
+export interface IngestReport {
+  sources: {
+    kind: string;
+    name: string;
+    format: string;
+    report: {
+      files_seen: number;
+      files_parsed: number;
+      records_total: number;
+      records_in_window: number;
+      skipped: { file: string; reason: string }[];
+      degradations: string[];
+      notes: string[];
+    } | null;
+  }[];
+  coverage: DayCoverage[];
+  degradations: string[];
+}

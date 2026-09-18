@@ -9,7 +9,7 @@ Put them in `backend/.env` (gitignored, loaded automatically by every command):
 ```ini
 MAPTILER_KEY=...          # optional -- without it the map falls back to OSM raster
 GEMINI_API_KEY=...        # optional -- without it AI suggestions are hidden entirely
-GOOGLE_PLACES_API_KEY=    # optional, off by default, costs money
+GOOGLE_PLACES_API_KEY=    # optional, off by default, PAID -- see ADR-0010
 ```
 
 Every command prints what it found:
@@ -128,7 +128,7 @@ own memory of the trip:
 
 ## Known gaps
 
-- No UI for creating a trip; `build` is CLI-only.
-- No photo-picker UI, though the backend supports a curated selection.
 - The review panel is a flat list; it should group by day.
-- Edit mode expands every event inline rather than just the selected one.
+- Edit mode expands every event inline rather than only the selected one.
+- No drag-and-drop between the photo pool and events; selection plus a button instead.
+- Google Places is implemented but off — see ADR-0010 for the cost and how to enable it.

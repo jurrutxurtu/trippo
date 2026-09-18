@@ -256,10 +256,14 @@ def cmd_serve(args: argparse.Namespace) -> int:
     import uvicorn
 
     from trippo.api.app import app, load_capsule
+    from trippo.service import library
 
-    root = Path(args.capsule)
-    trip = load_capsule(root)
-    print(f"[serve]    {trip.title}: {len(trip.days)} days, {len(trip.media)} media")
+    if args.capsule:
+        trip = load_capsule(Path(args.capsule))
+        print(f"[serve]    {trip.title}: {len(trip.days)} days, {len(trip.media)} media")
+    else:
+        found = library.list_capsules()
+        print(f"[serve]    workspace {library.workspace()} ({len(found)} trip(s))")
     print(f"[serve]    http://127.0.0.1:{args.port}/api/trip")
     if not os.environ.get("MAPTILER_KEY"):
         print("[serve]    ! MAPTILER_KEY not set -- the map falls back to OSM raster")
@@ -276,8 +280,10 @@ def _enrich(trip, args: argparse.Namespace, tracks_by_id: dict) -> None:
     from trippo.enrich.label import enrich_trip
     from trippo.enrich.nominatim import NominatimGeocoder
     from trippo.enrich.overpass import OverpassGeocoder
+    from trippo.enrich.places import resolver_from_env
 
     cache = GeocodeCache(Path(args.cache) if args.cache else None)
+    places = None if args.offline else resolver_from_env()
     if args.offline:
         # Cache-only: resolves whatever has been seen before, asks nothing of the network.
         providers: list = [_CacheOnly("overpass"), _CacheOnly("nominatim")]
@@ -287,12 +293,15 @@ def _enrich(trip, args: argparse.Namespace, tracks_by_id: dict) -> None:
         overpass = OverpassGeocoder()
         providers = [overpass, NominatimGeocoder()]
         deep = overpass.lookup_single_deep
-        print("[enrich]   resolving place names (Overpass -> Nominatim) ...", flush=True)
+        cascade = "Places -> Overpass -> Nominatim" if places else "Overpass -> Nominatim"
+        print(f"[enrich]   resolving place names ({cascade}) ...", flush=True)
 
     def progress(done: int, total: int, label: str) -> None:
         print(f"           {done}/{total}  {label:<20}", flush=True, end="\r")
 
-    report = enrich_trip(trip, providers, cache, deep_lookup=deep, progress=progress)
+    report = enrich_trip(
+        trip, providers, cache, deep_lookup=deep, places=places, progress=progress
+    )
 
     if not args.offline:
         _find_summits(trip, tracks_by_id)
@@ -486,8 +495,8 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("capsule", help="capsule directory")
     r.set_defaults(func=cmd_review)
 
-    s = sub.add_parser("serve", help="serve a capsule to the studio frontend")
-    s.add_argument("capsule", help="capsule directory")
+    s = sub.add_parser("serve", help="run the studio backend")
+    s.add_argument("capsule", nargs="?", help="capsule to open (optional)")
     s.add_argument("--port", type=int, default=8787)
     s.set_defaults(func=cmd_serve)
 
