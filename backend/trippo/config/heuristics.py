@@ -72,9 +72,16 @@ GEOCODE_CACHE_PRECISION: Final = 4
 NOMINATIM_URL: Final = "https://nominatim.openstreetmap.org/reverse"
 NOMINATIM_MIN_INTERVAL_S: Final = 1.0
 
+#: Mirrors, fastest first. Measured 2026-09-18 on an identical query:
+#:   kumi.systems    4.7 s
+#:   private.coffee  7.8 s
+#:   overpass-api.de 22.2 s   <- the reference implementation, and by far the slowest
+#: Order matters more than it looks: the first mirror is tried for every batch, so putting
+#: the 22-second one first made a Morocco import crawl.
 OVERPASS_ENDPOINTS: Final = (
-    "https://overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
+    "https://overpass-api.de/api/interpreter",
 )
 OVERPASS_BATCH_SIZE: Final = 6
 #: Client-side budget per request. The server-side directive is separate and larger; this

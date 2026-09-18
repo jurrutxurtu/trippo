@@ -51,7 +51,22 @@ class OverpassGeocoder:
             headers={"User-Agent": "trippo/0.1 (personal)"},
         )
         self._endpoints = list(endpoints or OVERPASS_ENDPOINTS)
+        #: Mirrors that have already failed this run, in failure order. A mirror that just
+        #: timed out will almost certainly time out again, and re-trying it first on every
+        #: batch is how one bad mirror turns a ten-minute import into an hour.
+        self._demoted: list[str] = []
         self.failures = 0
+
+    def _ordered(self) -> list[str]:
+        healthy = [e for e in self._endpoints if e not in self._demoted]
+        return healthy + self._demoted
+
+    def _demote(self, endpoint: str) -> None:
+        if endpoint in self._demoted:
+            return
+        # Never demote the last healthy mirror -- something has to be tried.
+        if len([e for e in self._endpoints if e not in self._demoted]) > 1:
+            self._demoted.append(endpoint)
 
     def lookup(self, queries: list[GeocodeQuery]) -> dict[int, list[PlaceCandidate]]:
         out: dict[int, list[PlaceCandidate]] = {}
@@ -84,11 +99,13 @@ class OverpassGeocoder:
 
     def _run(self, query: str, ways: bool) -> list[dict]:
         """Try each mirror in turn. Returns [] on total failure -- never raises."""
-        for endpoint in self._endpoints:
+        for endpoint in self._ordered():
             try:
                 r = self._client.post(endpoint, data={"data": query})
             except (httpx.HTTPError, OSError):
+                # A timeout or refused connection means this mirror is unwell right now.
                 self.failures += 1
+                self._demote(endpoint)
                 continue
             if r.status_code == 200:
                 try:
@@ -96,9 +113,11 @@ class OverpassGeocoder:
                 except ValueError:
                     self.failures += 1
                     continue
-            # 429 = rate limited, 504 = query too heavy. Both mean "back off".
+            # 429 = rate limited, 504 = query too heavy. Both mean "back off", but only
+            # rate limiting says anything about the mirror itself.
             self.failures += 1
             if r.status_code == 429:
+                self._demote(endpoint)
                 time.sleep(2.0)
         return []
 

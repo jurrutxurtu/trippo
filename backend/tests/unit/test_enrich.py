@@ -27,7 +27,7 @@ from trippo.domain.models import (
 from trippo.enrich.cache import GeocodeCache, cache_key
 from trippo.enrich.label import _radius_for, enrich_trip
 from trippo.enrich.rank import RankContext, best, rank
-from trippo.ports.geocoder import PlaceCandidate
+from trippo.ports.geocoder import GeocodeQuery, PlaceCandidate
 
 T0 = datetime(2023, 9, 23, 10, 0, tzinfo=UTC)
 
@@ -132,6 +132,62 @@ def test_an_empty_cached_result_is_remembered(cache):
     key = cache_key(53.012, -6.329, 300, "overpass")
     cache.put(key, "overpass", [])
     assert cache.get(key) == []
+
+
+# --------------------------------------------------------------------------- mirrors
+
+
+def test_a_failing_mirror_is_demoted_for_the_rest_of_the_run():
+    """One sick mirror must not be re-tried first on every batch.
+
+    Measured on 2026-09-18: overpass-api.de answered in 22 s while kumi.systems took 4.7 s.
+    Trying the slow one first, for every batch, is what made a Morocco import crawl.
+    """
+    import httpx
+
+    from trippo.enrich.overpass import OverpassGeocoder
+
+    attempts: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        attempts.append(str(request.url))
+        if "bad" in str(request.url):
+            raise httpx.ConnectTimeout("dead", request=request)
+        return httpx.Response(200, json={"elements": []})
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    geo = OverpassGeocoder(
+        client=client, endpoints=["https://bad/api", "https://good/api"]
+    )
+    q = GeocodeQuery(lat=31.06, lon=-7.91, radius_m=300)
+
+    geo.lookup([q])
+    geo.lookup([q])
+
+    # First pass tries the dead mirror once; the second must not.
+    assert attempts[0].startswith("https://bad")
+    assert all(a.startswith("https://good") for a in attempts[1:]), attempts
+
+
+def test_the_last_healthy_mirror_is_never_demoted():
+    """Something has to be tried, even when everything is unwell."""
+    import httpx
+
+    from trippo.enrich.overpass import OverpassGeocoder
+
+    calls = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        raise httpx.ConnectTimeout("dead", request=request)
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    geo = OverpassGeocoder(client=client, endpoints=["https://a/api", "https://b/api"])
+    q = GeocodeQuery(lat=31.06, lon=-7.91, radius_m=300)
+
+    geo.lookup([q])
+    geo.lookup([q])
+    assert calls["n"] >= 3, "must keep trying rather than give up entirely"
 
 
 # --------------------------------------------------------------------------- ranking

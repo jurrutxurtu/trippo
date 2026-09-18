@@ -106,6 +106,12 @@ def get(job_id: str) -> Job | None:
     return _JOBS.get(job_id)
 
 
+def all_jobs() -> list[Job]:
+    """Every job this process has run. In-memory only -- a restart forgets them, which is
+    correct: a job cannot outlive the thread running it."""
+    return list(_JOBS.values())
+
+
 def start(req: BuildRequest, on_done=None) -> Job:
     """Run a build in the background. Returns immediately with a job to watch."""
     job = Job(id=uuid.uuid4().hex[:12], title=req.title, out=req.out)

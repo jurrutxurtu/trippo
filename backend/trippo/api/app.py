@@ -214,6 +214,35 @@ def create_capsule(req: CreateRequest) -> JSONResponse:
     return JSONResponse({"jobId": job.id, "capsuleId": out.name})
 
 
+@app.get("/api/jobs")
+def list_jobs() -> JSONResponse:
+    """Every job this process knows about, newest first.
+
+    Exists because the job id otherwise lives only in the browser tab that started the
+    import, which makes a long-running job impossible to check on from anywhere else.
+    """
+    from trippo.service import jobs
+
+    known = sorted(jobs.all_jobs(), key=lambda j: j.started, reverse=True)
+    return JSONResponse(
+        {
+            "jobs": [
+                {
+                    "id": j.id,
+                    "title": j.title,
+                    "status": j.status,
+                    "error": j.error,
+                    "capsuleId": j.capsule_id,
+                    "started": j.started,
+                    "lastEvent": j.events[-1].as_dict if j.events else None,
+                    "eventCount": len(j.events),
+                }
+                for j in known
+            ]
+        }
+    )
+
+
 @app.get("/api/jobs/{job_id}")
 def job_status(job_id: str) -> JSONResponse:
     from trippo.service import jobs
