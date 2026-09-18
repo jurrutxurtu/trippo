@@ -137,15 +137,37 @@ Long silences during **Place names** are normal: one Overpass batch can stall fo
 and public mirrors throttle. The stream sends a heartbeat every ten seconds so the
 connection stays open through it.
 
-To check on a job by hand:
+To follow a running import from outside the browser:
 
-`powershell
-Invoke-RestMethod http://127.0.0.1:8787/api/jobs/<jobId>
-`
+```powershell
+.\scripts\watch-job.ps1               # finds whatever is running and follows it
+.\scripts\watch-job.ps1 -JobId abc123 # follows a known job
+```
+
+Or by hand:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:8787/api/jobs          # everything this process ran
+Invoke-RestMethod http://127.0.0.1:8787/api/jobs/<jobId>  # one job, with its full log
+```
+
+### Why place lookup can be slow
+
+Public Overpass mirrors vary enormously. Measured on 2026-09-18 with one identical query:
+
+| Mirror | Response |
+|---|---|
+| `overpass.kumi.systems` | 4.7 s |
+| `overpass.private.coffee` | 7.8 s |
+| `overpass-api.de` | 22.2 s |
+
+They are tried fastest-first, and any mirror that times out is demoted for the rest of the
+run rather than re-tried first on every batch. Results cache permanently in
+`~/.trippo/geocode-cache.sqlite`, so a second import of the same region is fast.
 
 ## Known gaps
 
 - The review panel is a flat list; it should group by day.
 - Edit mode expands every event inline rather than only the selected one.
 - No drag-and-drop between the photo pool and events; selection plus a button instead.
-- Google Places is implemented but off — see ADR-0010 for the cost and how to enable it.
+- Google Places is implemented but off â€” see ADR-0010 for the cost and how to enable it.
