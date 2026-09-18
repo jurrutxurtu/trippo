@@ -126,6 +126,23 @@ own memory of the trip:
 6. **Drive geometry is sparse.** Road legs come from 2-hourly breadcrumbs, so they cut
    corners. Only GPX tracks are precise.
 
+## If an import seems to stop
+
+The progress stream is for liveness only; it is never the source of truth. The client polls
+`GET /api/jobs/{id}` to the end regardless, so a dropped connection no longer looks like a
+failure. If you do see "The import stopped", the message under it is the real reason from
+the server, and the stage list shows how far it got.
+
+Long silences during **Place names** are normal: one Overpass batch can stall for a minute,
+and public mirrors throttle. The stream sends a heartbeat every ten seconds so the
+connection stays open through it.
+
+To check on a job by hand:
+
+`powershell
+Invoke-RestMethod http://127.0.0.1:8787/api/jobs/<jobId>
+`
+
 ## Known gaps
 
 - The review panel is a flat list; it should group by day.

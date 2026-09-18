@@ -243,6 +243,11 @@ def job_stream(job_id: str) -> StreamingResponse:
 
     def gen():
         for ev in job.drain():
+            if ev is None:
+                # An SSE comment. EventSource ignores it, proxies keep the socket warm,
+                # and the client learns that nothing has gone wrong.
+                yield ": ping\n\n"
+                continue
             yield f"data: {json.dumps(ev.as_dict)}\n\n"
         payload = {
             "status": job.status,

@@ -226,41 +226,20 @@ export const useApp = create<State>((set, get) => ({
     });
 
     // Server-sent events: a seven-minute spinner tells the user nothing.
+    //
+    // The stream is for liveness only. It is NEVER the source of truth about whether the
+    // job succeeded -- a dropped connection says nothing about a thread that is still
+    // working, and treating it as failure is what made a healthy import look broken.
+    // Authority lives in GET /api/jobs/{id}, which is polled to the end regardless.
     const stream = new EventSource(`/api/jobs/${jobId}/stream`);
     stream.onmessage = (e) => {
       const ev = JSON.parse(e.data) as JobEvent;
       set({ jobEvents: [...get().jobEvents, ev] });
     };
-    stream.addEventListener("end", (e) => {
-      const data = JSON.parse((e as MessageEvent).data);
-      stream.close();
-      set({
-        jobStatus: data.status === "done" ? "done" : "failed",
-        jobError: data.error ?? null,
-      });
-      if (data.status === "done" && data.capsuleId) {
-        void (async () => {
-          await fetch(`/api/capsules/${encodeURIComponent(data.capsuleId)}/open`, {
-            method: "POST",
-          });
-          await get().loadReport();
-          set({ screen: "report" });
-        })();
-      }
-    });
-    stream.onerror = () => {
-      stream.close();
-      // The job may have finished between the last event and the stream closing.
-      void fetch(`/api/jobs/${jobId}`)
-        .then((r) => r.json())
-        .then((j) =>
-          set({
-            jobStatus: j.status === "done" ? "done" : "failed",
-            jobError: j.error ?? null,
-          }),
-        )
-        .catch(() => set({ jobStatus: "failed", jobError: "Lost contact with the server." }));
-    };
+    stream.addEventListener("end", () => stream.close());
+    stream.onerror = () => stream.close();
+
+    void pollUntilDone(jobId, set, get);
   },
 
   async loadReport() {
@@ -272,3 +251,57 @@ export const useApp = create<State>((set, get) => ({
     }
   },
 }));
+
+/**
+ * Follow a job to completion, whatever the stream does.
+ *
+ * Polls slowly -- this runs for minutes, and the SSE stream is already carrying the
+ * detail. Only a job the server itself reports as failed is a failure.
+ */
+async function pollUntilDone(
+  jobId: string,
+  set: (partial: Partial<State>) => void,
+  get: () => State,
+): Promise<void> {
+  const started = Date.now();
+  const LIMIT_MS = 60 * 60 * 1000; // an hour is longer than any real import
+  let missed = 0;
+
+  while (Date.now() - started < LIMIT_MS) {
+    await new Promise((r) => setTimeout(r, 2000));
+    let job: { status: string; error: string | null; capsuleId: string | null; events: JobEvent[] };
+    try {
+      const res = await fetch(`/api/jobs/${jobId}`);
+      if (!res.ok) throw new Error(String(res.status));
+      job = await res.json();
+      missed = 0;
+    } catch {
+      // The backend may be briefly busy. Only give up once it is properly gone.
+      if (++missed >= 10) {
+        set({ jobStatus: "failed", jobError: "Lost contact with the backend." });
+        return;
+      }
+      continue;
+    }
+
+    // The stream may have dropped; the poll response still carries every event.
+    if (job.events.length > get().jobEvents.length) set({ jobEvents: job.events });
+    if (job.status === "running") continue;
+
+    if (job.status === "done" && job.capsuleId) {
+      await fetch(`/api/capsules/${encodeURIComponent(job.capsuleId)}/open`, {
+        method: "POST",
+      });
+      set({ jobStatus: "done", jobError: null });
+      await get().loadReport();
+      set({ screen: "report" });
+    } else {
+      set({
+        jobStatus: "failed",
+        jobError: job.error ?? "The import stopped without saying why.",
+      });
+    }
+    return;
+  }
+  set({ jobStatus: "failed", jobError: "The import took longer than an hour." });
+}

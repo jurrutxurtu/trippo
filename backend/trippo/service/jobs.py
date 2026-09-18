@@ -12,7 +12,6 @@ anyone running the backend elsewhere.
 
 from __future__ import annotations
 
-import queue
 import threading
 import uuid
 from dataclasses import dataclass, field
@@ -52,31 +51,52 @@ class Job:
         default_factory=lambda: datetime.now(UTC).isoformat(timespec="seconds")
     )
     events: list[JobEvent] = field(default_factory=list)
-    _queue: queue.Queue = field(default_factory=queue.Queue, repr=False)
+    #: Readers wait on this rather than popping a queue, so the event list stays the single
+    #: source of truth. A queue made a late client receive everything twice -- once from
+    #: the replay, once from the queue -- and let a second client steal the first one's
+    #: events.
+    _cond: threading.Condition = field(
+        default_factory=threading.Condition, repr=False
+    )
 
     def emit(self, ev: JobEvent) -> None:
-        self.events.append(ev)
-        self._queue.put(ev)
+        with self._cond:
+            self.events.append(ev)
+            self._cond.notify_all()
 
     def finish(self, status: str, error: str | None = None) -> None:
-        self.status = status
-        self.error = error
-        self._queue.put(None)  # sentinel: closes any open stream
+        with self._cond:
+            self.status = status
+            self.error = error
+            self._cond.notify_all()
 
-    def drain(self, timeout: float = 30.0):
-        """Yield events as they arrive, then stop when the job finishes."""
-        # Anything that happened before the client connected still needs sending.
-        yield from list(self.events)
-        if self.status != "running":
-            return
+    def drain(self, heartbeat: float = 10.0):
+        """Yield events as they arrive; `None` is a heartbeat, not an ending.
+
+        Silence is normal during ingestion -- a single Overpass batch can stall for over a
+        minute -- so an idle stream must NOT be read as a finished one. Returning on a
+        timeout is exactly what made a healthy import look like a failure: the stream
+        closed, the endpoint then described a still-running job as over, and the UI had
+        nothing better to do with that than call it an error.
+
+        Each reader keeps its own cursor, so several clients can watch the same job and a
+        late one still sees the whole history.
+        """
+        cursor = 0
         while True:
-            try:
-                ev = self._queue.get(timeout=timeout)
-            except queue.Empty:
+            with self._cond:
+                while cursor >= len(self.events) and self.status == "running":
+                    if not self._cond.wait(timeout=heartbeat):
+                        break  # nothing new; fall through and send a heartbeat
+                pending = self.events[cursor:]
+                cursor = len(self.events)
+                finished = self.status != "running"
+
+            yield from pending
+            if finished:
                 return
-            if ev is None:
-                return
-            yield ev
+            if not pending:
+                yield None  # keep the connection open; say nothing
 
 
 _JOBS: dict[str, Job] = {}

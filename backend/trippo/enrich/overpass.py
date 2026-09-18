@@ -27,6 +27,7 @@ import httpx
 
 from trippo.config.heuristics import (
     OVERPASS_BATCH_SIZE,
+    OVERPASS_CLIENT_TIMEOUT_S,
     OVERPASS_ENDPOINTS,
     OVERPASS_MAX_FEATURES,
     OVERPASS_TIMEOUT_S,
@@ -46,7 +47,8 @@ class OverpassGeocoder:
 
     def __init__(self, client: httpx.Client | None = None, endpoints=None) -> None:
         self._client = client or httpx.Client(
-            timeout=OVERPASS_TIMEOUT_S, headers={"User-Agent": "trippo/0.1 (personal)"}
+            timeout=OVERPASS_CLIENT_TIMEOUT_S,
+            headers={"User-Agent": "trippo/0.1 (personal)"},
         )
         self._endpoints = list(endpoints or OVERPASS_ENDPOINTS)
         self.failures = 0

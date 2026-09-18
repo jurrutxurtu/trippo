@@ -77,6 +77,10 @@ OVERPASS_ENDPOINTS: Final = (
     "https://overpass.kumi.systems/api/interpreter",
 )
 OVERPASS_BATCH_SIZE: Final = 6
+#: Client-side budget per request. The server-side directive is separate and larger; this
+#: bounds how long a single stalled mirror can block an import. Two mirrors at 60 s each
+#: meant a two-minute silence, which is what broke the progress stream.
+OVERPASS_CLIENT_TIMEOUT_S: Final = 25
 #: Query points sent to a provider per request during enrichment.
 FETCH_BATCH: Final = 6
 OVERPASS_TIMEOUT_S: Final = 60

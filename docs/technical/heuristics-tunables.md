@@ -114,7 +114,8 @@ See `docs/technical/enrichment.md` for the evidence behind each of these.
 | `GEOCODE_RADIUS_MIN_M` / `MAX_M` | 80 / 400 | Scales with visit duration: a 15 min stop looks 80 m out, a 3 h visit 400 m. Widened further for weakly-placed events. |
 | `GEOCODE_CACHE_PRECISION` | 4 | ~11 m grid. Finer would defeat caching; coarser would merge distinct POIs. |
 | `FETCH_BATCH` / `OVERPASS_BATCH_SIZE` | 6 | Measured ceiling on the public Overpass instance for nodes-only queries. Larger returns 504. |
-| `OVERPASS_TIMEOUT_S` | 60 | The server-side timeout declared in the query, matched by the client. |
+| `OVERPASS_TIMEOUT_S` | 60 | The server-side timeout declared inside the query. |
+| `OVERPASS_CLIENT_TIMEOUT_S` | 25 | Client-side budget per request, deliberately lower. Two mirrors at 60 s each meant a two-minute silence, which is long enough to break a naive progress stream. |
 | `NOMINATIM_MIN_INTERVAL_S` | 1.0 | Usage policy. Enforced in-process rather than trusted to callers. |
 | `TRACK_SAMPLE_POINTS` | 6 | Points sampled along an activity track. Enough to find the summit and the lake; few enough to stay inside one batch. |
 | `RANK_W_TYPE` | 1.0 | Tag affinity dominates: a campsite for an overnight, a peak for a hike. |

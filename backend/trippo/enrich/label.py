@@ -231,11 +231,10 @@ def _resolve_all(
             chunk_keys = keys[start : start + FETCH_BATCH]
             chunk = [still_missing[k] for k in chunk_keys]
             if progress:
-                progress(
-                    min(start + FETCH_BATCH, len(keys)),
-                    len(keys),
-                    f"{provider.name} lookup",
-                )
+                # Announce the attempt, not the success: a stalled mirror should show as a
+                # slow step rather than as silence.
+                upto = min(start + FETCH_BATCH, len(keys))
+                progress(start, len(keys), f"{provider.name} {start + 1}-{upto}")
             try:
                 found = provider.lookup(chunk)
             except Exception:

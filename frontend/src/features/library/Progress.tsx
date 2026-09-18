@@ -19,7 +19,7 @@ const STAGES = [
  * list doubles as an explanation of what Trippo actually does to your files.
  */
 export function Progress() {
-  const { jobEvents, jobStatus, jobError, go, draft } = useApp();
+  const { jobEvents, jobStatus, jobError, go, draft, startBuild } = useApp();
   const logRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -109,13 +109,27 @@ export function Progress() {
 
         {jobStatus === "failed" && (
           <div className="mt-5 rounded-lg bg-red-50 px-4 py-3 ring-1 ring-red-200">
-            <p className="text-xs font-medium text-red-900">{jobError}</p>
-            <button
-              onClick={() => go("create")}
-              className="mt-2 text-xs font-medium text-red-800 underline"
-            >
-              Back to the form
-            </button>
+            <p className="text-xs font-medium text-red-900">
+              {jobError ?? "The import stopped without saying why."}
+            </p>
+            <p className="mt-1 text-[11px] leading-relaxed text-red-800/80">
+              The stages above show how far it got. Your photographs and tracks were not
+              modified.
+            </p>
+            <div className="mt-3 flex gap-3">
+              <button
+                onClick={() => go("create")}
+                className="text-xs font-medium text-red-900 underline"
+              >
+                Back to the form
+              </button>
+              <button
+                onClick={() => void startBuild()}
+                className="text-xs font-medium text-red-900 underline"
+              >
+                Try again
+              </button>
+            </div>
           </div>
         )}
       </div>
