@@ -18,7 +18,7 @@ CANDIDATES = (
     Path.home() / ".trippo" / ".env",
 )
 
-KNOWN_KEYS = ("MAPTILER_KEY", "GEMINI_API_KEY", "GOOGLE_PLACES_API_KEY")
+KNOWN_KEYS = ("MAPTILER_KEY", "GEMINI_API_KEY", "GROQ_API_KEY", "GOOGLE_PLACES_API_KEY")
 
 
 def load_env(verbose: bool = False) -> dict[str, bool]:

@@ -8,8 +8,19 @@ Put them in `backend/.env` (gitignored, loaded automatically by every command):
 
 ```ini
 MAPTILER_KEY=...          # optional -- without it the map falls back to OSM raster
-GEMINI_API_KEY=...        # optional -- without it AI suggestions are hidden entirely
+GEMINI_API_KEY=...        # optional -- billed against a Cloud project, NOT covered by AI Pro
+GROQ_API_KEY=...          # optional -- free, no card: console.groq.com/keys
+LLM_ORDER=gemini,groq     # first provider that answers wins
 GOOGLE_PLACES_API_KEY=    # optional, off by default, PAID -- see ADR-0010
+```
+
+With no LLM key at all, AI suggestions are hidden entirely and everything else still works
+— including *hide passing-through stops*, which needs no model.
+
+To find out why a model is not answering:
+
+```bash
+python -m trippo.cli ai-check
 ```
 
 Every command prints what it found:

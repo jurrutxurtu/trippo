@@ -99,11 +99,47 @@ Only genuinely fuzzy judgements ("these two visits look like the same place") re
 A second failure falls back to the deterministic result. **A validation failure never blocks the
 user.**
 
-## Provider
+## Providers
 
-`ports/llm.py` defines the protocol; `ai/gemini.py` implements it with `google-genai`
-(Gemini Flash, structured output, native vision). Swappable. Key from `GEMINI_API_KEY`, read from
-`.env`, never committed.
+`ports/llm.py` defines the protocol. Two adapters implement it, and `ai/provider.py` chains
+them: **the first one that answers is used.**
+
+| Provider | Module | Key | Notes |
+|---|---|---|---|
+| Gemini | `ai/gemini.py` | `GEMINI_API_KEY` | Strongest structured output. Billed against a Cloud project. |
+| Groq | `ai/groq.py` | `GROQ_API_KEY` | OpenAI-compatible. Genuinely free tier, no card. |
+
+Order comes from `LLM_ORDER` (default `gemini,groq`). With no key at all, `NullProvider` is
+installed and every AI affordance is hidden.
+
+### Why a chain rather than one provider
+
+Every provider has its own way of being unavailable — Gemini needs credits on a Cloud
+project, a key can be restricted without warning, Groq's free tier rate-limits — and they
+all look identical in a UI that simply shows nothing. Trying them in order means the user
+does not have to diagnose which one broke.
+
+A provider that fails is **demoted for the rest of the process**; one dead provider must
+not tax every subsequent request. The chain is cached per process for exactly that reason.
+
+> **A Google AI Pro subscription does not cover the Gemini API.** They are billed
+> separately, and a project with no credits returns `429` for every model. This is the
+> single most confusing failure in the whole setup, so `trippo ai-check` says it in words.
+
+### Diagnosing it
+
+```bash
+python -m trippo.cli ai-check
+```
+
+Probes every provider in the chain and distinguishes *no key* from *restricted key* from
+*no credits* from *retired model* — failures that are otherwise indistinguishable.
+
+### Batching
+
+Contested place names are settled `NAME_BATCH` at a time rather than one request each. The
+reference trip has 54 of them, which exhausts a free tier before it finishes; batching also
+lets the model stay consistent across stops in the same quarter.
 
 ## Privacy
 

@@ -13,6 +13,7 @@ import json
 import mimetypes
 import os
 from datetime import date as _date
+from functools import lru_cache
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -23,6 +24,7 @@ from pydantic import BaseModel
 
 from trippo.capsule import io as capsule_io
 from trippo.domain.models import Trip
+from trippo.ports.llm import Llm
 
 # Windows has no registry entry for WebP, so `mimetypes` guesses None and StaticFiles
 # serves every derivative as application/octet-stream. Browsers mostly sniff their way
@@ -87,6 +89,17 @@ def _session_state(session) -> dict:
 # ============================================================================ health
 
 
+@lru_cache(maxsize=1)
+def _llm() -> Llm:
+    """One provider chain per process.
+
+    Deliberately cached: the chain demotes a provider that has failed, and rebuilding it
+    on every request would throw that away and re-try the dead one forever.
+    """
+    from trippo.ai.provider import provider_from_env
+
+    return provider_from_env()
+
 @app.get("/api/health")
 def health() -> dict:
     root = _STATE.get("root")
@@ -95,7 +108,8 @@ def health() -> dict:
         "capsule": str(root) if root else None,
         "capsuleOpen": _STATE.get("session") is not None,
         "mapTilerKey": os.environ.get("MAPTILER_KEY", ""),
-        "aiAvailable": bool(os.environ.get("GEMINI_API_KEY")),
+        "aiAvailable": _llm().available,
+        "aiProvider": _llm().name,
         "placesAvailable": bool(os.environ.get("GOOGLE_PLACES_API_KEY")),
     }
 
@@ -448,12 +462,11 @@ def generate_suggestions(kind: str) -> JSONResponse:
     user accepts or rejects, and an accepted one is undoable like any other edit.
     """
     from trippo.ai import suggestions as sg
-    from trippo.ai.gemini import provider_from_env
 
     if kind not in SUGGESTION_KINDS:
         raise HTTPException(status_code=400, detail=f"Unknown kind {kind!r}")
 
-    llm = provider_from_env()
+    llm = _llm()
     # Demotion is a deterministic rule; the model only refines it. Everything else needs
     # a model to say anything at all.
     if not llm.available and kind != "demote":
@@ -564,9 +577,8 @@ class SuggestRequest(BaseModel):
 def suggest(req: SuggestRequest) -> JSONResponse:
     """Optional AI. Returns 204 when no model is configured, so the UI hides the feature."""
     from trippo.ai import suggest as s
-    from trippo.ai.gemini import provider_from_env
 
-    llm = provider_from_env()
+    llm = _llm()
     if not llm.available:
         return JSONResponse(status_code=204, content=None)
 

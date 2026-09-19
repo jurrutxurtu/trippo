@@ -144,5 +144,6 @@ See `docs/technical/enrichment.md` for the evidence behind each of these.
 | `GROUP_MAX_GAP_MIN` | 40 | A run of stops closer together than this in time is probably one visit. |
 | `GROUP_MAX_SPAN_M` | 700 | And closer than this in space. A city block, not a district: grouping too widely turns a day of real places into one vague blob. |
 | `GROUP_MIN_EVENTS` | 3 | Below this it is not a group, it is two stops. |
+| `GROUP_MAX_TOTAL_SPAN_MIN` | 300 | End to end. Without it a nearby overnight drags a group across 31 hours, and the result describes being in a town rather than going anywhere. Overnights are excluded from grouping outright for the same reason. |
 | `PASSING_MAX_MINUTES` | 12 | Passing through beyond reasonable doubt. Proposed even with no model. |
 | `PASSING_REVIEW_MAX_MINUTES` | 35 | With a model, the band the Golden Rule spared only because the stop had a name. On the reference trip all 53 photo-less stops sit above 20 minutes, so the tighter threshold alone found nothing. |

@@ -133,6 +133,9 @@ GROUP_MAX_GAP_MIN: Final = 40
 GROUP_MAX_SPAN_M: Final = 700.0
 #: Below this it is not a group, it is two stops.
 GROUP_MIN_EVENTS: Final = 3
+#: End to end. Without it, a nearby overnight drags a group across 31 hours and the
+#: result is not a visit to anywhere -- it is a day and a half of being in a town.
+GROUP_MAX_TOTAL_SPAN_MIN: Final = 300
 #: A stop shorter than this, with no photographs, was passing through beyond reasonable
 #: doubt. Proposed even with no model. Never applied to anything with a photograph.
 PASSING_MAX_MINUTES: Final = 12

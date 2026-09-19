@@ -1,8 +1,8 @@
-"""Check whether the language model is actually usable.
+"""Is a language model actually usable?
 
-Configuring an LLM has three independent ways to fail -- no key, a key the service
-refuses, and a project with no credits -- and they produce very similar symptoms in a UI
-that simply shows nothing. This says which one it is.
+Configuring an LLM has several independent ways to fail -- no key, a key the service
+refuses, a project with no credits, a retired model -- and they all look the same in a UI
+that simply shows nothing. This says which one it is, for every provider in the chain.
 """
 
 from __future__ import annotations
@@ -11,91 +11,148 @@ import os
 
 import httpx
 
-BASE = "https://generativelanguage.googleapis.com/v1beta"
+GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta"
+GROQ_BASE = "https://api.groq.com/openai/v1"
+
+PROBE = {"contents": [{"parts": [{"text": "Reply with the single word: ok"}]}]}
 
 
 def check() -> tuple[bool, list[str]]:
-    """Return (usable, lines to print)."""
-    key = os.environ.get("GEMINI_API_KEY", "")
-    model = os.environ.get("GEMINI_MODEL", "")
-    out: list[str] = []
+    """Return (any provider usable, lines to print)."""
+    from trippo.ai.provider import DEFAULT_ORDER
 
-    if not key:
-        return False, [
-            "GEMINI_API_KEY is not set.",
-            "  AI suggestions are hidden. Everything else works.",
-            "  Get a key at https://aistudio.google.com/apikey and put it in backend/.env",
+    order = [
+        n.strip()
+        for n in (os.environ.get("LLM_ORDER") or ",".join(DEFAULT_ORDER)).split(",")
+        if n.strip()
+    ]
+
+    out: list[str] = [f"order    : {' \u2192 '.join(order)}", ""]
+    usable = False
+
+    for name in order:
+        ok, lines = _check_one(name)
+        usable = usable or ok
+        out.extend(lines)
+        out.append("")
+
+    if not usable:
+        out += [
+            "No provider can answer, so AI suggestions are hidden.",
+            "Everything deterministic still works -- including 'hide passing-through",
+            "stops', which needs no model at all.",
         ]
+    return usable, out
 
-    out.append(f"key      : {key[:6]}… ({len(key)} chars)")
 
-    # 1 -- can we list models? Proves the key exists and the API is not blocked.
+def _check_one(name: str) -> tuple[bool, list[str]]:
+    if name == "gemini":
+        return _gemini()
+    if name == "groq":
+        return _groq()
+    return False, [f"{name:<8} : unknown provider"]
+
+
+# --------------------------------------------------------------------------- gemini
+
+
+def _gemini() -> tuple[bool, list[str]]:
+    from trippo.ai.gemini import DEFAULT_MODEL
+
+    key = os.environ.get("GEMINI_API_KEY", "")
+    if not key:
+        return False, ["gemini   : no key (GEMINI_API_KEY)"]
+
+    out = [f"gemini   : key {key[:6]}\u2026 ({len(key)} chars)"]
     try:
-        r = httpx.get(f"{BASE}/models?key={key}", timeout=25)
+        r = httpx.get(f"{GEMINI_BASE}/models?key={key}", timeout=25)
     except httpx.HTTPError as exc:
-        return False, [*out, f"network  : cannot reach Google ({exc})"]
+        return False, [*out, f"           cannot reach Google ({exc})"]
 
     if r.status_code != 200:
         err = r.json().get("error", {}) if r.text else {}
         reason = (err.get("details") or [{}])[0].get("reason", "")
-        out.append(f"models   : {r.status_code} {reason}")
+        out.append(f"           listing {r.status_code} {reason}")
         if reason == "API_KEY_SERVICE_BLOCKED":
             out += [
-                "",
-                "  This key is restricted and the Generative Language API is not allowed.",
-                "  Google Cloud Console -> APIs & Services -> Credentials -> your key",
-                "  -> API restrictions: remove the restriction, or add",
-                "     'Generative Language API'. Check it is enabled on the project too.",
+                "           The key is restricted and this API is not allowed.",
+                "           Cloud Console -> Credentials -> the key -> API restrictions",
             ]
         elif reason == "API_KEY_INVALID":
-            out.append("  The key is not valid. Create a new one at aistudio.google.com/apikey")
-        else:
-            out.append(f"  {(err.get('message') or '')[:200]}")
+            out.append("           Not a valid key. aistudio.google.com/apikey")
         return False, out
 
-    names = [m["name"].split("/")[-1] for m in r.json().get("models", [])]
-    out.append(f"models   : {len(names)} available")
-
-    from trippo.ai.gemini import DEFAULT_MODEL
-
-    wanted = model or DEFAULT_MODEL
-    if wanted not in names and not wanted.endswith("-latest"):
-        flash = [n for n in names if "flash" in n and "preview" not in n][:4]
-        out.append(f"model    : {wanted!r} is NOT in the list. Try one of: {', '.join(flash)}")
-    else:
-        out.append(f"model    : {wanted}")
-
-    # 2 -- can we actually generate? Proves the project has credits.
+    model = os.environ.get("GEMINI_MODEL") or DEFAULT_MODEL
     try:
         g = httpx.post(
-            f"{BASE}/models/{wanted}:generateContent?key={key}",
-            json={"contents": [{"parts": [{"text": "Reply with the single word: ok"}]}]},
+            f"{GEMINI_BASE}/models/{model}:generateContent?key={key}",
+            json=PROBE,
             timeout=45,
         )
     except httpx.HTTPError as exc:
-        return False, [*out, f"generate : failed ({exc})"]
+        return False, [*out, f"           generate failed ({exc})"]
 
     if g.status_code == 200:
-        out.append("generate : works")
-        return True, out
+        return True, [*out, f"           {model} works"]
 
-    err = g.json().get("error", {}) if g.text else {}
-    message = (err.get("message") or "")[:200]
-    out.append(f"generate : {g.status_code}")
+    message = ((g.json().get("error") or {}).get("message") or "")[:160]
+    out.append(f"           generate {g.status_code}")
     if "credits are depleted" in message or g.status_code == 429:
         out += [
-            "",
-            "  The key is fine; the project has no API credits.",
-            "  A Google AI Pro subscription covers the Gemini APP, not the API --",
-            "  they are billed separately. Either:",
-            "    * add billing or credits at https://aistudio.google.com/",
-            "    * or create a key on a project that still has the free tier",
-            "",
-            "  Trippo stays fully usable meanwhile. Only the four model-driven",
-            "  suggestions are hidden; everything deterministic still runs.",
+            "           No API credits on this project.",
+            "           A Google AI Pro subscription covers the Gemini APP, not the",
+            "           API -- they are billed separately.",
         ]
     elif "no longer available" in message:
-        out.append(f"  Google retired that model. Unset GEMINI_MODEL to use {DEFAULT_MODEL}.")
+        out.append(
+            f"           Google retired that model; unset GEMINI_MODEL ({DEFAULT_MODEL})."
+        )
     else:
-        out.append(f"  {message}")
+        out.append(f"           {message}")
+    return False, out
+
+
+# --------------------------------------------------------------------------- groq
+
+
+def _groq() -> tuple[bool, list[str]]:
+    from trippo.ai.groq import DEFAULT_MODEL
+
+    key = os.environ.get("GROQ_API_KEY", "")
+    if not key:
+        return False, [
+            "groq     : no key (GROQ_API_KEY)",
+            "           Free, no card needed: console.groq.com/keys",
+        ]
+
+    out = [f"groq     : key {key[:8]}\u2026 ({len(key)} chars)"]
+    model = os.environ.get("GROQ_MODEL") or DEFAULT_MODEL
+    try:
+        r = httpx.post(
+            f"{GROQ_BASE}/chat/completions",
+            headers={"Authorization": f"Bearer {key}"},
+            json={
+                "model": model,
+                "messages": [{"role": "user", "content": "Reply with the word ok"}],
+                "max_tokens": 8,
+            },
+            timeout=45,
+        )
+    except httpx.HTTPError as exc:
+        return False, [*out, f"           cannot reach Groq ({exc})"]
+
+    if r.status_code == 200:
+        return True, [*out, f"           {model} works"]
+
+    try:
+        message = ((r.json().get("error") or {}).get("message") or "")[:160]
+    except ValueError:
+        message = r.text[:160]
+    out.append(f"           {r.status_code} {message}")
+    if r.status_code == 401:
+        out.append("           Not a valid key. console.groq.com/keys")
+    elif r.status_code == 429:
+        out.append("           Free-tier rate limit; it resets within a minute.")
+    elif r.status_code == 404:
+        out.append("           Set GROQ_MODEL from console.groq.com/docs/models")
     return False, out

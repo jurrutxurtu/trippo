@@ -110,10 +110,5 @@ def _readable(exc: Exception) -> str:
     return text[:200]
 
 
-def provider_from_env() -> Any:
-    """Gemini when a key exists, otherwise the null provider."""
-    from trippo.ports.llm import NullProvider
-
-    if os.environ.get("GEMINI_API_KEY"):
-        return GeminiProvider()
-    return NullProvider()
+# Provider selection lives in `ai/provider.py`, which chains Gemini with Groq. It is not
+# here, because a `provider_from_env` in this module would silently return Gemini alone.

@@ -429,7 +429,7 @@ def test_an_activity_already_described_is_left_alone():
 
 
 def test_a_tiebreak_picks_from_the_candidates():
-    llm = FakeLlm({"choice": "Titanic Belfast"})
+    llm = FakeLlm({"choices": [{"index": 0, "name": "Titanic Belfast"}]})
     trip = _trip([_ev("a", "Dr William Drennan", at=0, minutes=90, confidence=0.6)])
     out = sg.suggest_place_names(
         llm, trip, candidates_for=lambda e: ["Dr William Drennan", "Titanic Belfast"]
@@ -438,14 +438,28 @@ def test_a_tiebreak_picks_from_the_candidates():
     assert out[0].ops[0]["op"] == "rename_event"
 
 
-def test_a_tiebreak_may_not_invent_an_option():
-    llm = FakeLlm({"choice": "Somewhere Else"})
+def test_tiebreaks_are_batched():
+    """54 contested names on the reference trip; one request each exhausts a free tier."""
+    llm = FakeLlm({"choices": []})
+    events = [
+        _ev(f"e{i}", f"Name {i}", at=i * 60, confidence=0.6, lat=54.0 + i)
+        for i in range(30)
+    ]
+    sg.suggest_place_names(
+        llm, _trip(events), candidates_for=lambda e: ["One", "Two"]
+    )
+    assert len(llm.prompts) <= 3, f"expected batching, made {len(llm.prompts)} calls"
+
+
+def test_a_tiebreak_may_not_borrow_another_stops_option():
+    """Each stop may only be renamed to one of ITS OWN candidates."""
+    llm = FakeLlm({"choices": [{"index": 0, "name": "Somewhere Else"}]})
     trip = _trip([_ev("a", "A", at=0, confidence=0.6)])
     assert sg.suggest_place_names(llm, trip, candidates_for=lambda e: ["A", "B"]) == []
 
 
 def test_confident_names_are_left_alone():
-    llm = FakeLlm({"choice": "B"})
+    llm = FakeLlm({"choices": [{"index": 0, "name": "B"}]})
     trip = _trip([_ev("a", "A", at=0, confidence=0.95)])
     assert sg.suggest_place_names(llm, trip, candidates_for=lambda e: ["A", "B"]) == []
 

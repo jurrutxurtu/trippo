@@ -27,6 +27,7 @@ from trippo.ai.validators import choice_is_offered, invented_names, within_lengt
 from trippo.config.heuristics import (
     GROUP_MAX_GAP_MIN,
     GROUP_MAX_SPAN_M,
+    GROUP_MAX_TOTAL_SPAN_MIN,
     GROUP_MIN_EVENTS,
     PASSING_MAX_MINUTES,
     PASSING_REVIEW_MAX_MINUTES,
@@ -45,6 +46,9 @@ from trippo.domain.models import (
 from trippo.ports.llm import Llm
 
 MAX_TITLE = 70
+#: Contested names settled per request. One request each exhausts a free tier before it
+#: finishes, and batching also lets the model stay consistent across nearby stops.
+NAME_BATCH = 15
 MAX_SUMMARY = 160
 
 SYSTEM = (
@@ -114,6 +118,10 @@ def _clusters(events: list[Event]) -> list[list[Event]]:
         if e.type not in TRANSIT_TYPES
         and e.type not in ACTIVITY_TYPES
         and e.type is not EventType.UNKNOWN
+        # An overnight is a distinct, meaningful event. Folding one into a daytime group
+        # produces a "visit" spanning thirty-one hours, which is a description of being
+        # in a town rather than of going anywhere.
+        and e.type is not EventType.OVERNIGHT
         and not e.track_ids
         and e.place
         and e.place.lat is not None
@@ -137,7 +145,12 @@ def _clusters(events: list[Event]) -> list[list[Event]]:
         prev = current[-1][0]
         gap_min = (e.start - prev.end).total_seconds() / 60.0
         spread = haversine_m(current[0][1], here)
-        if gap_min <= GROUP_MAX_GAP_MIN and spread <= GROUP_MAX_SPAN_M:
+        span_min = (e.end - current[0][0].start).total_seconds() / 60.0
+        if (
+            gap_min <= GROUP_MAX_GAP_MIN
+            and spread <= GROUP_MAX_SPAN_M
+            and span_min <= GROUP_MAX_TOTAL_SPAN_MIN
+        ):
             current.append(item)
         else:
             runs.append([x for x, _ in current])
@@ -162,7 +175,7 @@ def suggest_groups(llm: Llm, trip: Trip) -> list[Suggestion]:
             if len(names) < GROUP_MIN_EVENTS:
                 continue
             media = sum(len(e.media_ids) for e in run)
-            minutes = sum(e.duration_s for e in run) / 60.0
+            minutes = (run[-1].end - run[0].start).total_seconds() / 60.0
 
             response = llm.complete(
                 system=SYSTEM,
@@ -491,13 +504,17 @@ def suggest_place_names(
 ) -> list[Suggestion]:
     """Break the ties the deterministic ranking could not settle.
 
-    The model may only choose from the candidates it was given (ADR-0008) -- enforced, not
-    requested.
+    Batched, and that matters: the reference trip has 54 contested names, and one request
+    each exhausts a free tier before it finishes. A single request also lets the model be
+    consistent -- it can see that three stops are all in the same quarter.
+
+    The model may only choose from the candidates it was given (ADR-0008) -- enforced,
+    not requested.
     """
     if not llm.available:
         return []
 
-    out: list[Suggestion] = []
+    pending: list[tuple[Event, str, list[str]]] = []
     for e in trip.active_events:
         if (
             not e.place
@@ -507,55 +524,79 @@ def suggest_place_names(
         ):
             continue
         options = candidates_for(e) if candidates_for else []
-        if len(options) < 2:
-            continue
+        if len(options) >= 2:
+            pending.append((e, e.place.name, options))
 
-        minutes = e.duration_s / 60.0
+    out: list[Suggestion] = []
+    for start in range(0, len(pending), NAME_BATCH):
+        chunk = pending[start : start + NAME_BATCH]
+        lines = []
+        for i, (e, current, options) in enumerate(chunk):
+            lines.append(
+                f"{i}. currently {current!r}, a {e.type.value} of "
+                f"{e.duration_s / 60:.0f} min with {len(e.media_ids)} photographs\n"
+                + "\n".join(f"     - {c}" for c in options[:8])
+            )
+
         response = llm.complete(
             system=(
-                "You pick the most useful name for a place someone stopped at on a trip. "
-                "Choose EXACTLY one of the options given. Do not invent or combine."
+                "You pick the most useful name for places someone stopped at on a trip. "
+                "For each numbered stop choose EXACTLY one of ITS OWN options. "
+                "Do not invent, combine, or borrow an option from another stop. "
+                "Omit a stop entirely if the current name is already the best choice."
             ),
-            prompt=(
-                f"A {e.type.value} lasting {minutes:.0f} minutes with "
-                f"{len(e.media_ids)} photographs.\n\nOptions:\n"
-                + "\n".join(f"- {c}" for c in options)
-            ),
+            prompt="\n\n".join(lines),
             schema={
                 "type": "object",
-                "properties": {"choice": {"type": "string"}},
-                "required": ["choice"],
+                "properties": {
+                    "choices": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "index": {"type": "integer"},
+                                "name": {"type": "string"},
+                            },
+                            "required": ["index", "name"],
+                        },
+                    }
+                },
+                "required": ["choices"],
             },
         )
         if not response.ok:
-            continue
-        choice = str(response.data.get("choice", "")).strip()
-        if not choice_is_offered(choice, options) or choice == e.place.name:
-            continue
+            break  # rate limited or worse; keep what we have rather than hammering on
 
-        out.append(
-            Suggestion(
-                id=_sid("name"),
-                kind="place_name",
-                title=choice,
-                rationale=(
-                    f"Currently \u201c{e.place.name}\u201d. "
-                    f"{minutes:.0f} min, {len(e.media_ids)} photographs. "
-                    f"Other candidates: {', '.join(c for c in options if c != choice)[:80]}"
-                ),
-                event_ids=[e.id],
-                day_id=e.day_id,
-                media_count=len(e.media_ids),
-                ops=[
-                    {
-                        "op": "rename_event",
-                        "payload": {"event_id": e.id, "name": choice},
-                    }
-                ],
+        for item in response.data.get("choices", []):
+            idx = item.get("index")
+            choice = str(item.get("name", "")).strip()
+            if not isinstance(idx, int) or not 0 <= idx < len(chunk):
+                continue
+            e, current, options = chunk[idx]
+            # Only from its OWN list, never another stop's.
+            if not choice_is_offered(choice, options) or choice == current:
+                continue
+            out.append(
+                Suggestion(
+                    id=_sid("name"),
+                    kind="place_name",
+                    title=choice,
+                    rationale=(
+                        f"Currently \u201c{current}\u201d. "
+                        f"{e.duration_s / 60:.0f} min, {len(e.media_ids)} photographs."
+                    ),
+                    event_ids=[e.id],
+                    day_id=e.day_id,
+                    media_count=len(e.media_ids),
+                    ops=[
+                        {
+                            "op": "rename_event",
+                            "payload": {"event_id": e.id, "name": choice},
+                        }
+                    ],
+                )
             )
-        )
     return out
-
 
 GENERATORS = {
     "group": suggest_groups,
