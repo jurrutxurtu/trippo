@@ -65,6 +65,7 @@ is shared with the map. Esc walks back up.
 | Why it exists | [`docs/product/vision.md`](docs/product/vision.md) |
 | What it does | [`docs/product/functional-spec.md`](docs/product/functional-spec.md) |
 | How it is built | [`docs/technical/architecture.md`](docs/technical/architecture.md) |
+| **The pipeline, visually** | [`docs/technical/pipeline.md`](docs/technical/pipeline.md) |
 | What a capsule is | [`docs/technical/capsule-format.md`](docs/technical/capsule-format.md) |
 | **What breaks on real data** | [`docs/technical/ingestion.md`](docs/technical/ingestion.md) |
 | Why a constant is what it is | [`docs/technical/heuristics-tunables.md`](docs/technical/heuristics-tunables.md) |

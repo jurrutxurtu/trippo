@@ -107,6 +107,7 @@ just snapshot-update  # accept golden snapshot changes (explain in commit!)
 | How do I run the whole thing? | `docs/product/testing-walkthrough.md` |
 | What must it do? | `docs/product/functional-spec.md` |
 | How is it built? | `docs/technical/architecture.md` |
+| **What happens to my files?** | `docs/technical/pipeline.md` (visual, start here) |
 | What is a capsule? | `docs/technical/capsule-format.md` |
 | Why is this number 130? | `docs/technical/heuristics-tunables.md` |
 | Why was X chosen? | `docs/decisions/` |
