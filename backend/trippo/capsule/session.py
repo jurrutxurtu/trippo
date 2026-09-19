@@ -17,13 +17,14 @@ from __future__ import annotations
 import json
 from collections import deque
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from trippo.capsule import io as capsule_io
 from trippo.domain import ops
 from trippo.domain.invariants import InvariantError, check
-from trippo.domain.models import EventType, Trip
+from trippo.domain.models import EventType, Trip, TripStatus
 from trippo.domain.stats import compute_trip_stats
 from trippo.domain.summarize import summarize
 
@@ -40,6 +41,10 @@ def _slice(trip: Trip) -> str:
             "unassigned_track_ids": trip.unassigned_track_ids,
             "title": trip.title,
             "subtitle": trip.subtitle,
+            # The lifecycle is curation state too: finishing must be undoable like any
+            # other operation.
+            "status": trip.status.value,
+            "curated_at": trip.curated_at.isoformat() if trip.curated_at else None,
         },
         ensure_ascii=False,
     )
@@ -55,6 +60,9 @@ def _restore(trip: Trip, blob: str) -> None:
     trip.unassigned_track_ids = data["unassigned_track_ids"]
     trip.title = data["title"]
     trip.subtitle = data["subtitle"]
+    trip.status = TripStatus(data.get("status", "draft"))
+    raw = data.get("curated_at")
+    trip.curated_at = datetime.fromisoformat(raw) if raw else None
 
 
 @dataclass
@@ -162,6 +170,10 @@ def _dispatch(trip: Trip, op: str, p: dict[str, Any]) -> None:
             ops.attach_track(trip, p["event_id"], p["track_id"])
         case "detach_track":
             ops.detach_track(trip, p["event_id"], p["track_id"])
+        case "finalise":
+            ops.finalise(trip)
+        case "reopen":
+            ops.reopen(trip)
         case "set_trip_meta":
             ops.set_trip_meta(trip, p.get("title"), p.get("subtitle"))
         case _:

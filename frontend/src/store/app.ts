@@ -8,7 +8,7 @@ import type { CapsuleSummary, IngestReport, JobEvent } from "@/lib/types";
  * about getting to it. Mixing them would mean the explorer re-renders every time a file
  * picker returns.
  */
-export type Screen = "library" | "create" | "progress" | "report" | "trip";
+export type Screen = "library" | "create" | "progress" | "report" | "curate" | "trip";
 
 export interface Draft {
   title: string;

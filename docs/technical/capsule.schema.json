@@ -1911,6 +1911,15 @@
       "title": "TripStats",
       "type": "object"
     },
+    "TripStatus": {
+      "description": "Where a trip is in its life.\n\nA capsule exists from the moment ingestion finishes, but it is a *draft* until the\nuser has been through it and agreed the itinerary. The distinction matters: a draft is\na machine's guess, and the product's whole claim is that the human decides.",
+      "enum": [
+        "draft",
+        "curated"
+      ],
+      "title": "TripStatus",
+      "type": "string"
+    },
     "UnknownDetail": {
       "additionalProperties": false,
       "description": "An unaccounted gap. States facts only -- never a classification. ADR-0007.",
@@ -1969,7 +1978,7 @@
   "description": "The capsule root. Serialised to `capsule.json`.\n\nInvariant, checked on every read, write and curation operation: every media id appears\nin exactly one active event OR in `unassigned_media_ids` -- never both, never neither.",
   "properties": {
     "schema_version": {
-      "default": "0.4.0",
+      "default": "0.5.0",
       "title": "Schema Version",
       "type": "string"
     },
@@ -2024,6 +2033,23 @@
       ],
       "default": null,
       "title": "Notes"
+    },
+    "status": {
+      "$ref": "#/$defs/TripStatus",
+      "default": "draft"
+    },
+    "curated_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Curated At"
     },
     "created_at": {
       "format": "date-time",

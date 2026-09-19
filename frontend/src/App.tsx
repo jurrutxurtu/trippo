@@ -9,6 +9,7 @@ import { Library } from "@/features/library/Library";
 import { CreateTrip } from "@/features/library/CreateTrip";
 import { Progress } from "@/features/library/Progress";
 import { Report } from "@/features/library/Report";
+import { CurationWalkthrough } from "@/features/curate/CurationWalkthrough";
 import { DayRail } from "@/features/curate/DayRail";
 import { UnassignedPool } from "@/features/curate/UnassignedPool";
 
@@ -31,8 +32,25 @@ function Shell({ screen }: { screen: string }) {
       {screen === "create" && <CreateTrip />}
       {screen === "progress" && <Progress />}
       {screen === "report" && <Report />}
+      {screen === "curate" && <CurateScreen />}
     </div>
   );
+}
+
+/** The curation phase needs the trip loaded, but not the map. */
+function CurateScreen() {
+  const { load, trip, loading } = useTrip();
+  useEffect(() => {
+    if (!trip) void load();
+  }, [load, trip]);
+  if (loading || !trip) {
+    return (
+      <div className="flex h-full items-center justify-center bg-zinc-50">
+        <p className="text-sm text-zinc-400">Loading the draft&hellip;</p>
+      </div>
+    );
+  }
+  return <CurationWalkthrough />;
 }
 
 /** The explorer: timeline left, map right, one shared selection. */

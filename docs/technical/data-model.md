@@ -3,7 +3,7 @@
 
 # Data model (generated)
 
-Capsule schema version **0.4.0**.
+Capsule schema version **0.5.0**.
 
 This document is generated from the Pydantic models in `backend/trippo/domain/models.py`.
 For the prose contract -- layout on disk, portability rules, invariants and migrations --
@@ -53,6 +53,7 @@ see [`capsule-format.md`](capsule-format.md).
 - **PlaceSource**: `osm`, `nominatim`, `photon`, `google`, `gpx`, `user`, `coords`
 - **SourceKind**: `timeline`, `gpx`, `media`, `manual`
 - **TimeSource**: `exif`, `exif_no_offset`, `filename`, `mtime`, `user`
+- **TripStatus**: `draft`, `curated`
 
 ## Fields
 

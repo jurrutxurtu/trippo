@@ -437,6 +437,32 @@ def nearby_media(event_id: str, minutes: int = 45) -> JSONResponse:
     return JSONResponse({"window": minutes, "candidates": out, "totalOwned": len(owned)})
 
 
+@app.get("/api/curation/agenda")
+def curation_agenda() -> JSONResponse:
+    """What the user still has to decide, ordered by how much it matters.
+
+    This is the guided pass between ingestion and a finished trip: the machine has made a
+    draft, and this is the list of things only a person can settle.
+    """
+    from trippo.ai.agenda import blocking_count, build_agenda
+
+    trip = _trip()
+    items = build_agenda(trip)
+    return JSONResponse(
+        {
+            "status": trip.status.value,
+            "curatedAt": trip.curated_at.isoformat() if trip.curated_at else None,
+            "items": [i.as_dict for i in items],
+            "blocking": blocking_count(items),
+            "counts": {
+                "decide": sum(1 for i in items if i.kind.value == "decide"),
+                "check": sum(1 for i in items if i.kind.value == "check"),
+                "polish": sum(1 for i in items if i.kind.value == "polish"),
+            },
+        }
+    )
+
+
 @app.get("/api/review")
 def review() -> JSONResponse:
     """Everything worth checking before calling a trip finished.

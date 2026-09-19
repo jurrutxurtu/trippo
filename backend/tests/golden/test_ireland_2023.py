@@ -121,6 +121,24 @@ def test_return_crossing_is_a_single_gap_not_two(trip):
     assert len(gaps) == 1, f"the return crossing fragmented into {len(gaps)} gaps"
 
 
+def test_a_merged_gap_recomputes_what_it_could_have_been(trip):
+    """The return crossing is assembled from a 30-minute fragment and a 19-hour one.
+
+    Judged on the fragment alone (402 km in half an hour) it looks like a flight. Judged
+    whole -- 19 hours, 1,000 km, across a timezone change -- it is obviously a sea
+    crossing. Candidates must follow the merged shape, not the first piece of it.
+    """
+    gaps = [
+        e
+        for e in trip.events
+        if e.type is EventType.UNKNOWN and e.detail.displacement_km > 900
+    ]
+    assert gaps, "no long crossing found"
+    for g in gaps:
+        kinds = {t.value for t in g.detail.candidate_types}
+        assert "ferry" in kinds, f"a 19-hour 1,000 km gap offered only {kinds}"
+
+
 def test_gaps_are_not_noise(trip):
     """Holes where the user simply did not move are stays, not unaccounted travel.
 

@@ -212,6 +212,9 @@ export interface Trip {
   id: string;
   title: string;
   subtitle: string | null;
+  /** A trip is a draft until the user has walked through it and agreed the itinerary. */
+  status: TripStatus;
+  curated_at: string | null;
   date_range: { start: string; end: string };
   days: Day[];
   events: TripEvent[];
@@ -266,6 +269,7 @@ export interface CapsuleSummary {
   unaccountedCount: number;
   cover: string | null;
   modified: string;
+  status: TripStatus;
 }
 
 export interface JobEvent {
@@ -300,4 +304,18 @@ export interface IngestReport {
   }[];
   coverage: DayCoverage[];
   degradations: string[];
+}
+export type TripStatus = "draft" | "curated";
+
+/** One thing the user still has to settle, from /api/curation/agenda. */
+export interface AgendaItem {
+  id: string;
+  kind: "decide" | "check" | "polish";
+  code: string;
+  title: string;
+  detail: string;
+  dayId: string | null;
+  eventId: string | null;
+  actions: { label: string; op: string | null; payload: Record<string, unknown>; dismiss?: boolean }[];
+  mediaCount: number;
 }

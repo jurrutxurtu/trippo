@@ -15,7 +15,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-SCHEMA_VERSION = "0.4.0"
+SCHEMA_VERSION = "0.5.0"
 
 
 class _Base(BaseModel):
@@ -42,6 +42,18 @@ class EventType(StrEnum):
 ACTIVITY_TYPES = frozenset({EventType.HIKE, EventType.WALK, EventType.BIKE})
 #: Event types that represent movement between two places.
 TRANSIT_TYPES = frozenset({EventType.DRIVE, EventType.FLIGHT, EventType.FERRY})
+
+
+class TripStatus(StrEnum):
+    """Where a trip is in its life.
+
+    A capsule exists from the moment ingestion finishes, but it is a *draft* until the
+    user has been through it and agreed the itinerary. The distinction matters: a draft is
+    a machine's guess, and the product's whole claim is that the human decides.
+    """
+
+    DRAFT = "draft"
+    CURATED = "curated"
 
 
 class EventStatus(StrEnum):
@@ -514,6 +526,9 @@ class Trip(_Base):
     default_timezone: str = "UTC"
     cover_media_id: str | None = None
     notes: str | None = None
+    #: A trip is a draft until the user has agreed the itinerary. See TripStatus.
+    status: TripStatus = TripStatus.DRAFT
+    curated_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 

@@ -34,6 +34,8 @@ class Gap:
     displacement_km: float
     candidate_types: list[EventType] = field(default_factory=list)
     reasons: list[str] = field(default_factory=list)
+    #: Kept so candidates can be recomputed if this gap is later merged with another.
+    tz_changed: bool = False
 
 
 def find_gaps(observations: list[NormalizedObservation]) -> list[Gap]:
@@ -80,6 +82,11 @@ def find_gaps(observations: list[NormalizedObservation]) -> list[Gap]:
         )
 
         if _is_unexplained(hours, dist_km):
+            tz_changed = (
+                cur_obs.utc_offset_minutes is not None
+                and obs.utc_offset_minutes is not None
+                and cur_obs.utc_offset_minutes != obs.utc_offset_minutes
+            )
             reasons = [f"{dist_km:.0f} km displacement with no recorded position"]
             if hours >= GAP_MIN_HOURS:
                 reasons.append(f"{hours:.1f} h unrecorded")
@@ -91,8 +98,9 @@ def find_gaps(observations: list[NormalizedObservation]) -> list[Gap]:
                     to_coord=to_c,
                     hours=round(hours, 2),
                     displacement_km=round(dist_km, 1),
-                    candidate_types=_candidates(hours, dist_km, cur_obs, obs),
+                    candidate_types=_candidates(hours, dist_km, tz_changed),
                     reasons=reasons,
+                    tz_changed=tz_changed,
                 )
             )
 
@@ -129,12 +137,18 @@ def _merge_split_gaps(gaps: list[Gap]) -> list[Gap]:
                     else prev.displacement_km + g.displacement_km,
                     1,
                 ),
-                candidate_types=prev.candidate_types or g.candidate_types,
+                # Recompute rather than inherit: a 30-minute 400 km fragment looks like a
+                # flight, but merged into 19 hours and 1,000 km it is plainly a crossing.
+                candidate_types=[],  # filled in below, once hours and distance are known
                 reasons=[
                     *prev.reasons,
                     "merged with the next gap across an isolated "
                     f"{covered_h * 60:.0f} min fix",
                 ],
+                tz_changed=prev.tz_changed or g.tz_changed,
+            )
+            out[-1].candidate_types = _candidates(
+                out[-1].hours, out[-1].displacement_km, out[-1].tz_changed
             )
         else:
             out.append(g)
@@ -158,9 +172,7 @@ def _is_unexplained(hours: float, dist_km: float) -> bool:
     return hours >= GAP_MIN_HOURS and dist_km >= GAP_STATIONARY_KM
 
 
-def _candidates(
-    hours: float, dist_km: float, a: NormalizedObservation, b: NormalizedObservation
-) -> list[EventType]:
+def _candidates(hours: float, dist_km: float, tz_changed: bool = False) -> list[EventType]:
     """Plausible types for the one-click conversion buttons.
 
     These populate UI affordances ONLY. The event stays `unknown` and asserts no distance
@@ -178,11 +190,6 @@ def _candidates(
     else:
         out.append(EventType.DRIVE)
 
-    tz_changed = (
-        a.utc_offset_minutes is not None
-        and b.utc_offset_minutes is not None
-        and a.utc_offset_minutes != b.utc_offset_minutes
-    )
     if tz_changed and EventType.FERRY not in out:
         out.insert(0, EventType.FERRY)
     return out

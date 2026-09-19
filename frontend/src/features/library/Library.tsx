@@ -70,9 +70,19 @@ export function Library() {
                     )}
                   </div>
                   <div className="px-4 py-3">
-                    <h2 className="truncate text-sm font-semibold text-zinc-900">
-                      {c.title}
-                    </h2>
+                    <div className="flex items-center gap-2">
+                      <h2 className="min-w-0 flex-1 truncate text-sm font-semibold text-zinc-900">
+                        {c.title}
+                      </h2>
+                      {c.status === "draft" && (
+                        <span
+                          className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800"
+                          title="Ingested but not yet agreed"
+                        >
+                          draft
+                        </span>
+                      )}
+                    </div>
                     <p className="mt-0.5 text-[11px] text-zinc-500">
                       {c.start && c.end
                         ? `${formatDate(c.start)} \u2013 ${formatDate(c.end)}`

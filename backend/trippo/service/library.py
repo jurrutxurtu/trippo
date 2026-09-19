@@ -38,6 +38,7 @@ class CapsuleSummary:
     unaccounted_count: int
     cover: str | None
     modified: str
+    status: str = "draft"
 
     @property
     def as_dict(self) -> dict:
@@ -52,6 +53,7 @@ class CapsuleSummary:
             "unaccountedCount": self.unaccounted_count,
             "cover": self.cover,
             "modified": self.modified,
+            "status": self.status,
         }
 
 
@@ -112,6 +114,7 @@ def list_capsules(root: Path | None = None) -> list[CapsuleSummary]:
                 modified=datetime.fromtimestamp(manifest.stat().st_mtime).isoformat(
                     timespec="seconds"
                 ),
+                status=data.get("status", "draft"),
             )
         )
     out.sort(key=lambda c: c.modified, reverse=True)

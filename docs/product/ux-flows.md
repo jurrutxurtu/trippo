@@ -5,14 +5,12 @@ Desktop-first, ≥1280 px. The capsule *viewer* is responsive; the studio is not
 ## The seven steps
 
 ```
-1 NEW TRIP    → name; dates proposed from media EXIF, editable
-2 DROP FILES  → Timeline? · GPX folder? · Photo folder(s)?   (any subset)
-                live progress: "1,097 photos · 127 videos · 7 tracks · 433 segments"
-3 REPORT      → coverage matrix + degradations, before anything is asserted
-4 CURATE      ◄── the heart of the app
-5 REVIEW      → stats, hero photos, tone, notes
-6 SUGGEST     → optional AI titles and flags
-7 CAPSULE     → read view, export
+1 LIBRARY     → every trip in the workspace; drafts are marked
+2 NEW TRIP    → name; dates proposed from photo EXIF; native folder pickers
+3 IMPORT      → live stage-by-stage progress over SSE
+4 REPORT      → coverage matrix + degradations, before anything is asserted
+5 CURATE      ◄── the phase: agree the itinerary, one decision at a time
+6 CAPSULE     → the explorer; editing stays available, export from here
 ```
 
 ## Step 3 — the Ingestion Report
@@ -62,7 +60,41 @@ Rules that make it pleasant:
   card, a visit renders place + photos, a hike renders track + profile. A city trip never shows an
   empty elevation chart.
 
-## Step 7 — the capsule explorer
+## Step 5 — the curation phase
+
+**Ingestion produces a draft, not a trip.** A capsule exists the moment the import
+finishes, but until someone has been through it, it is a machine's guess. The whole claim
+of the product is that the human decides, so that has to be a real step with a beginning
+and an end — not a toggle hidden inside the reading view.
+
+A trip is therefore `draft` until it is agreed, and the library marks it so.
+
+### The agenda
+
+`/api/curation/agenda` turns the coherence checks into an ordered queue. Three kinds, and
+the distinction is the point:
+
+| Kind | Meaning | Blocks finishing |
+|---|---|---|
+| **decide** | Only you know this. An unaccounted gap is a question, not a defect. | **yes** |
+| **check** | Probably wrong, cheap to confirm. Two overnights, photos in the pool. | no |
+| **polish** | Entirely optional. Day titles, contested place names. | no |
+
+Presented **one at a time**, hardest first. A list of forty problems is a chore; a queue of
+forty decisions with the next one in front of you is a task. Every item carries the
+photographs involved, so a decision is made looking at the evidence.
+
+A gap always offers the suggested conversions *and* every other plausible one — a
+suggestion that turns out to be wrong must never be a dead end — plus "leave it
+unexplained", which is a legitimate answer.
+
+### Finishing
+
+**Finish curating** records that a human went through it. It locks nothing: every
+operation stays available afterwards, and the trip can be reopened. It is undoable like
+any other operation.
+
+## Step 6 — the capsule explorer
 
 **Not a scrolling article.** The first prototype was an editorial page — photographs, stats, a
 decorative map — and it was the wrong product. A finished trip is something you *explore*.

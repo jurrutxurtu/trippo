@@ -20,6 +20,7 @@ export function Toolbar() {
     save,
     busy,
     review,
+    trip,
   } = useTrip();
 
   const blocking = review?.filter((f) => f.severity === "blocking").length ?? 0;
@@ -47,6 +48,27 @@ export function Toolbar() {
         >
           {editing ? "Done editing" : "Edit"}
         </button>
+        {trip && trip.status === "draft" ? (
+          <button
+            onClick={() => useApp.getState().go("curate")}
+            className="flex items-center gap-1.5 rounded-lg bg-amber-100 px-2.5 py-1.5 text-[11px] font-medium text-amber-900 ring-1 ring-amber-200 hover:bg-amber-200"
+            title="This trip has not been agreed yet"
+          >
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
+            Draft &middot; agree the itinerary
+          </button>
+        ) : (
+          trip && (
+            <button
+              onClick={() => useApp.getState().go("curate")}
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-emerald-700 hover:bg-emerald-50"
+              title={`Agreed ${trip.curated_at?.slice(0, 10) ?? ""}`}
+            >
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              Curated
+            </button>
+          )
+        )}
         {blocking > 0 && (
           <span className="flex items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1.5 text-[11px] font-medium text-amber-800 ring-1 ring-amber-200">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-400" />

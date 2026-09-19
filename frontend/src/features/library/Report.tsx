@@ -144,9 +144,15 @@ export function Report() {
           </button>
           <button
             onClick={() => go("trip")}
+            className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-white"
+          >
+            Just show me the trip
+          </button>
+          <button
+            onClick={() => go("curate")}
             className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500"
           >
-            Open the trip
+            Agree the itinerary &rarr;
           </button>
         </div>
       </div>

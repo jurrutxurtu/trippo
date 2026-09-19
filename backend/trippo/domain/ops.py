@@ -16,7 +16,7 @@ Two rules run through all of them:
 from __future__ import annotations
 
 import uuid
-from datetime import timedelta
+from datetime import UTC, timedelta
 from typing import Any
 
 from trippo.domain.models import (
@@ -32,6 +32,7 @@ from trippo.domain.models import (
     PlaceSource,
     TransitDetail,
     Trip,
+    TripStatus,
     UnknownDetail,
 )
 
@@ -342,6 +343,23 @@ def detach_track(trip: Trip, event_id: str, track_id: str) -> None:
     if track_id not in trip.unassigned_track_ids:
         trip.unassigned_track_ids.append(track_id)
     e.user_edited = True
+
+
+def finalise(trip: Trip) -> None:
+    """Mark the itinerary as agreed.
+
+    Does not lock anything -- the user can always reopen. It records that a human has been
+    through it, which is the difference between a machine's guess and a trip.
+    """
+    from datetime import datetime
+
+    trip.status = TripStatus.CURATED
+    trip.curated_at = datetime.now(UTC)
+
+
+def reopen(trip: Trip) -> None:
+    trip.status = TripStatus.DRAFT
+    trip.curated_at = None
 
 
 def set_trip_meta(trip: Trip, title: str | None, subtitle: str | None) -> None:

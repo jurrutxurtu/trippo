@@ -64,11 +64,23 @@ def _v030_to_v040(payload: dict[str, Any]) -> dict[str, Any]:
     return payload
 
 
+def _v040_to_v050(payload: dict[str, Any]) -> dict[str, Any]:
+    """0.4.0 -> 0.5.0: the trip lifecycle.
+
+    Adds Trip.status and Trip.curated_at. Existing capsules become drafts, which is
+    the honest default: nobody has walked through them and agreed the itinerary.
+    """
+    payload.setdefault("status", "draft")
+    payload.setdefault("curated_at", None)
+    return payload
+
+
 #: version -> (next_version, migration). Applied in order on read.
 MIGRATIONS: dict[str, tuple[str, Migration]] = {
     "0.1.0": ("0.2.0", _v010_to_v020),
     "0.2.0": ("0.3.0", _v020_to_v030),
     "0.3.0": ("0.4.0", _v030_to_v040),
+    "0.4.0": ("0.5.0", _v040_to_v050),
 }
 
 
