@@ -220,6 +220,17 @@ def cmd_build(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_ai_check(_args: argparse.Namespace) -> int:
+    from trippo.ai.healthcheck import check
+
+    usable, lines = check()
+    for line in lines:
+        print(line)
+    print()
+    print("AI suggestions: " + ("available" if usable else "unavailable"))
+    return 0 if usable else 1
+
+
 def cmd_export(args: argparse.Namespace) -> int:
     from trippo.capsule.export import export_html
 
@@ -494,6 +505,9 @@ def main(argv: list[str] | None = None) -> int:
     r = sub.add_parser("review", help="what is worth checking before finishing")
     r.add_argument("capsule", help="capsule directory")
     r.set_defaults(func=cmd_review)
+
+    a = sub.add_parser("ai-check", help="is the language model usable?")
+    a.set_defaults(func=cmd_ai_check)
 
     s = sub.add_parser("serve", help="run the studio backend")
     s.add_argument("capsule", nargs="?", help="capsule to open (optional)")

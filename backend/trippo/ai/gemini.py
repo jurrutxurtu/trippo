@@ -13,15 +13,19 @@ from typing import Any
 
 from trippo.ports.llm import LlmResponse
 
-DEFAULT_MODEL = "gemini-2.0-flash"
+#: An alias rather than a pinned version, deliberately. Google retires models: the first
+#: key tested against this code failed with "models/gemini-2.0-flash is no longer
+#: available", and a pinned name turns that into a dead feature months later. Override
+#: with GEMINI_MODEL when a specific version matters.
+DEFAULT_MODEL = "gemini-flash-latest"
 
 
 class GeminiProvider:
     name = "gemini"
 
-    def __init__(self, api_key: str | None = None, model: str = DEFAULT_MODEL) -> None:
+    def __init__(self, api_key: str | None = None, model: str | None = None) -> None:
         self._key = api_key or os.environ.get("GEMINI_API_KEY", "")
-        self._model = model
+        self._model = model or os.environ.get("GEMINI_MODEL") or DEFAULT_MODEL
         self._client: Any = None
         self.failures = 0
         #: The last thing that went wrong. Surfaced to the user, because a blocked key
@@ -87,6 +91,18 @@ def _readable(exc: Exception) -> str:
         )
     if "API_KEY_INVALID" in text or "API key not valid" in text:
         return "GEMINI_API_KEY is not a valid key."
+    if "prepayment credits are depleted" in text or "credits are depleted" in text:
+        return (
+            "This Google project has no API credits left. A Google AI Pro subscription "
+            "covers the Gemini app, not the API -- they are billed separately. Add "
+            "billing or credits at aistudio.google.com, or create a key on a project "
+            "with the free tier available."
+        )
+    if "no longer available" in text:
+        return (
+            f"Google has retired this model. Set GEMINI_MODEL to a current one, or unset "
+            f"it to use the default ({DEFAULT_MODEL})."
+        )
     if "quota" in text.lower() or "RESOURCE_EXHAUSTED" in text:
         return "The model's quota is exhausted. Try again later."
     if "PERMISSION_DENIED" in text:
