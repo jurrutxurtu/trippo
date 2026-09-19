@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTrip } from "@/store/trip";
 import { useApp } from "@/store/app";
 import type { AgendaItem, Trip } from "@/lib/types";
+import { Suggestions } from "@/features/curate/Suggestions";
 
 /**
  * The curation phase: the guided pass between a machine's draft and an agreed trip.
@@ -57,8 +58,9 @@ export function CurationWalkthrough() {
 
   if (live.length === 0) {
     return (
-      <Centered>
-        <div className="max-w-md text-center">
+      <div className="min-h-full bg-zinc-50">
+        <div className="mx-auto max-w-3xl px-10 py-10">
+          <div className="max-w-xl">
           <h1 className="text-xl font-semibold tracking-tight text-zinc-900">
             Nothing left to decide
           </h1>
@@ -66,15 +68,19 @@ export function CurationWalkthrough() {
             {trip.title} is ready. You can still change anything later &mdash; finishing
             just records that you have been through it.
           </p>
-          <button
-            onClick={() => void finish()}
-            disabled={busy}
-            className="mt-6 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-500"
-          >
-            Finish and open the trip
-          </button>
+          </div>
+          <Suggestions trip={trip} />
+          <div className="mt-8 flex justify-end border-t border-zinc-200 pt-5">
+            <button
+              onClick={() => void finish()}
+              disabled={busy}
+              className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-500"
+            >
+              Finish and open the trip
+            </button>
+          </div>
         </div>
-      </Centered>
+      </div>
     );
   }
 
@@ -134,6 +140,8 @@ export function CurationWalkthrough() {
         )}
 
         <Remaining items={live} current={current} onJump={(i) => setAt(i)} />
+
+        <Suggestions trip={trip} />
 
         <div className="mt-8 flex items-center justify-between border-t border-zinc-200 pt-5">
           <span className="text-[11px] text-zinc-500">

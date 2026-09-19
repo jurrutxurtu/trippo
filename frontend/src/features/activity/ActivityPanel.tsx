@@ -35,6 +35,12 @@ export function ActivityPanel({ event }: { event: TripEvent }) {
         </h2>
       </div>
 
+      {event.summary && (
+        <p className="border-b border-zinc-200 px-6 py-3 text-xs italic leading-relaxed text-zinc-600">
+          {event.summary}
+        </p>
+      )}
+
       {stats && (
         <div className="grid grid-cols-3 gap-px border-b border-zinc-200 bg-zinc-200">
           <Metric value={km(stats.distance_m, 1)} label="distance" />

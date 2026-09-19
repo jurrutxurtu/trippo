@@ -8,6 +8,50 @@ day**. Long generated prose is an explicit non-goal (`AGENTS.md` §1).
 The app is **fully functional with no API key**. Without one, `NullProvider` is installed and every
 AI affordance is hidden — not greyed out, hidden.
 
+## Suggestions: structural, not prose
+
+The five features below share one shape, and it is the shape that makes them safe:
+
+> the model proposes a **structural change over data it can already see**, and the user
+> accepts or rejects it.
+
+It never writes a fact, never invents a place, and every accepted suggestion is one
+undoable operation. A suggestion that fails validation is dropped silently -- the
+deterministic result stands, and the user is never shown something the facts do not
+support.
+
+| Kind | What it proposes | Needs a model |
+|---|---|---|
+| `group` | Fold a run of nearby stops into the area they were. Geometry finds the runs; the model only names them and picks which stop represents the group. | yes |
+| `demote` | Hide stops that were passing through. **Never** anything with a photograph attached. | no |
+| `day_title` | Name a day by what it was *for*, not by its longest stop. | yes |
+| `activity_shape` | Describe a walk from its own telemetry and the summits it crossed. | yes |
+| `place_name` | Break a tie the deterministic ranking could not settle (ADR-0008). | yes |
+
+### Why geometry finds the groups, not the model
+
+Letting a model decide *which* events are related invites it to relate unrelated ones.
+Clustering is a rule -- within `GROUP_MAX_GAP_MIN` and `GROUP_MAX_SPAN_M` -- and the model is
+asked only the question a rule cannot answer: what was this, collectively?
+
+### Why demotion needs no model
+
+Short, photograph-less and unremarkable is deterministic, and gating a safe cleanup behind
+an API key would be silly. When a model *is* available the net widens from
+`PASSING_MAX_MINUTES` to `PASSING_REVIEW_MAX_MINUTES`, and the model is used only to **spare**
+things -- to pull a real destination back out of the pile.
+
+That wider band matters: the Golden Rule already suppressed everything shorter than
+`PRUNE_MIN_DURATION_MIN` *unless it had a name*, so the survivors are precisely the events
+geocoding lent a significance they may not deserve. A named junction is still a junction.
+
+### A grouping loses nothing
+
+The new event takes every photograph and spans the full range; the originals are
+suppressed with a reason and recorded in `provenance.absorbed`. The map point comes from one
+of the originals, never a centroid -- a centroid drops a pin in the middle of a road.
+`ungroup_event` reverses it, and the whole thing is undoable.
+
 ## Features
 
 | Feature | Input | Output | Cost |

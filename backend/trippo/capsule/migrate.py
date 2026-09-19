@@ -75,12 +75,26 @@ def _v040_to_v050(payload: dict[str, Any]) -> dict[str, Any]:
     return payload
 
 
+def _v050_to_v060(payload: dict[str, Any]) -> dict[str, Any]:
+    """0.5.0 -> 0.6.0: Event.summary.
+
+    A model-written one-liner, kept separate from 
+ote so the user's own words are never
+    overwritten by a suggestion.
+    """
+    for event in payload.get("events", []):
+        event.setdefault("summary", None)
+    return payload
+
+
 #: version -> (next_version, migration). Applied in order on read.
 MIGRATIONS: dict[str, tuple[str, Migration]] = {
+    "0.5.0": ("0.6.0", _v050_to_v060),
     "0.1.0": ("0.2.0", _v010_to_v020),
     "0.2.0": ("0.3.0", _v020_to_v030),
     "0.3.0": ("0.4.0", _v030_to_v040),
     "0.4.0": ("0.5.0", _v040_to_v050),
+
 }
 
 

@@ -15,7 +15,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-SCHEMA_VERSION = "0.5.0"
+SCHEMA_VERSION = "0.6.0"
 
 
 class _Base(BaseModel):
@@ -329,6 +329,9 @@ class Event(_Base):
     user_edited: bool = False
     user_pinned: bool = False
     title: str | None = None
+    #: A one-line description of what this was, written by the model from the facts.
+    #: Kept separate from the user's own note, which a suggestion never overwrites.
+    summary: str | None = None
     note: str | None = None
     detail: EventDetail
 

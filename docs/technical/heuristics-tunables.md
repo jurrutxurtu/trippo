@@ -72,7 +72,7 @@ Failing events are `suppressed` with a reason, **never deleted**.
 | `GPX_SIMPLIFY_TOLERANCE_M` | 8 | Douglas-Peucker tolerance. ~3,200 points â†’ ~1,200 with no visible change at z14. |
 | `GPX_SIMPLIFY_MAX_POINTS` | 1500 | Render budget per track. |
 | `ELEVATION_THRESHOLD_M` | 4 | **Critical.** Without a threshold, GPS altitude noise reports +1,400 m on a flat ride. Every ascent/descent figure uses it, and the UI states it. |
-| `ELEVATION_SMOOTH_WINDOW` | 5 | Applied **before** the threshold. A bare threshold still accumulates when noise amplitude exceeds it — ±2.5 m samples give 5 m swings, which a 4 m threshold happily counts (P15). Smoothing kills the oscillation; the threshold removes residual drift. |
+| `ELEVATION_SMOOTH_WINDOW` | 5 | Applied **before** the threshold. A bare threshold still accumulates when noise amplitude exceeds it ï¿½ ï¿½2.5 m samples give 5 m swings, which a 4 m threshold happily counts (P15). Smoothing kills the oscillation; the threshold removes residual drift. |
 | `TRACK_MERGE_GAP_MIN` | 15 | Below this, adjacent tracks are offered for merging (P9). Never merged silently. |
 
 ## Media matching
@@ -93,14 +93,14 @@ Failing events are `suppressed` with a reason, **never deleted**.
 | `CONFIDENCE_TIMELINE_MOVE` | 0.6 | A provider-asserted move is usually right about *that* movement happened, less so about its mode. |
 | `CONFIDENCE_MEDIA_CLUSTER` | 0.4 | A cluster inferred from photo timestamps alone is a suggestion, and the UI should show it as one. |
 | `PLACE_CONFIDENCE_FROM_EXIF` | 0.8 | An event located from geotagged photos rests on a camera measurement. |
-| `PLACE_CONFIDENCE_FROM_INFERRED` | 0.3 | An event located from photos that were themselves interpolated. Two inferences deep — treat gently, and let the geocoder widen its search radius. |
+| `PLACE_CONFIDENCE_FROM_INFERRED` | 0.3 | An event located from photos that were themselves interpolated. Two inferences deep ï¿½ treat gently, and let the geocoder widen its search radius. |
 
 ## Two independent plausibility tests
 
 `draft/plausibility.py` runs both; either can condemn a visit.
 
-- **Exit test** — reaching the next fix after the visit needs more than `MAX_GROUND_SPEED_KMH`.
-- **Containment test** — a fix recorded *during* the visit is implausibly far from its anchor.
+- **Exit test** ï¿½ reaching the next fix after the visit needs more than `MAX_GROUND_SPEED_KMH`.
+- **Containment test** ï¿½ a fix recorded *during* the visit is implausibly far from its anchor.
 
 The containment test is not redundant: it is the one that catches the reference phantom, because
 the mid-Atlantic breadcrumb precedes the visit's own end timestamp and leaves the exit test with a
@@ -122,18 +122,27 @@ See `docs/technical/enrichment.md` for the evidence behind each of these.
 | `RANK_W_DISTANCE` | 0.7 | Strong but subordinate to type. Tolerance widens when the query point itself is uncertain. |
 | `RANK_W_DURATION` | 0.3 | A three-hour stop is not a roadside memorial. |
 | `RANK_W_NOTABLE` | 0.35 | A wikidata/heritage tag separates a destination from a plaque. Decisive in dense cities. |
-| `RANK_GENERIC_PENALTY` | 0.4 | "Car Park", "Church", "Beach" — correct and useless. |
+| `RANK_GENERIC_PENALTY` | 0.4 | "Car Park", "Church", "Beach" ï¿½ correct and useless. |
 | `RANK_ADMIN_PENALTY` | 0.8 | "Centre Ward No. 5" is filing, not a place. Large because these are never right. |
 | `RANK_REPEAT_PENALTY` | 0.5 | Stops the same monument winning four consecutive city-centre stops. |
 | `RANK_REPEAT_WINDOW` | 4 | How many preceding events count as "nearby" for that penalty. |
-| `RANK_MIN_CLEAR_MARGIN` | 0.15 | Below this the pick is **contested** — the hook for the E4 LLM tiebreak. |
+| `RANK_MIN_CLEAR_MARGIN` | 0.15 | Below this the pick is **contested** ï¿½ the hook for the E4 LLM tiebreak. |
 | `PLACE_CONFIDENCE_CLEAR` / `CONTESTED` | 0.9 / 0.6 | Recorded on the place so the UI can show how sure Trippo is. |
 ## Track highlights and map geometry
 
 | Constant | Value | Rationale |
 |---|---|---|
-| `PEAK_MAX_DIST_M` | 250 | A summit is something you stand on. Generous enough for GPS drift and for a tagged point sitting slightly off the cairn; on the reference data Slieve Binnian matched at 4 m and the neighbouring tops at 46–224 m. |
+| `PEAK_MAX_DIST_M` | 250 | A summit is something you stand on. Generous enough for GPS drift and for a tagged point sitting slightly off the cairn; on the reference data Slieve Binnian matched at 4 m and the neighbouring tops at 46ï¿½224 m. |
 | `WATER_MAX_DIST_M` | 600 | A lake is something you walk beside, and the tagged centre of a lough can be far from its shore. |
 | `ROUTE_SIMPLIFY_TOLERANCE_M` | 40 | Coarser than a track profile (8 m): at trip zoom nobody can resolve 8 m of detail, and the overview route is drawn for all 27 days at once. |
 | `ROUTE_MAX_POINTS_PER_SEGMENT` | 300 | Render budget per leg. The reference trip assembles 103 segments in ~1,550 points. |
 | `TRIP_BBOX_PAD_M` | 400 | Breathing room when fitting. A bbox fitted exactly puts the trailhead against the window edge. |
+## Suggestions
+
+| Constant | Value | Rationale |
+|---|---|---|
+| `GROUP_MAX_GAP_MIN` | 40 | A run of stops closer together than this in time is probably one visit. |
+| `GROUP_MAX_SPAN_M` | 700 | And closer than this in space. A city block, not a district: grouping too widely turns a day of real places into one vague blob. |
+| `GROUP_MIN_EVENTS` | 3 | Below this it is not a group, it is two stops. |
+| `PASSING_MAX_MINUTES` | 12 | Passing through beyond reasonable doubt. Proposed even with no model. |
+| `PASSING_REVIEW_MAX_MINUTES` | 35 | With a model, the band the Golden Rule spared only because the stop had a name. On the reference trip all 53 photo-less stops sit above 20 minutes, so the tighter threshold alone found nothing. |

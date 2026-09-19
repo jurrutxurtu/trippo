@@ -547,6 +547,18 @@
           "default": null,
           "title": "Title"
         },
+        "summary": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Summary"
+        },
         "note": {
           "anyOf": [
             {
@@ -1978,7 +1990,7 @@
   "description": "The capsule root. Serialised to `capsule.json`.\n\nInvariant, checked on every read, write and curation operation: every media id appears\nin exactly one active event OR in `unassigned_media_ids` -- never both, never neither.",
   "properties": {
     "schema_version": {
-      "default": "0.5.0",
+      "default": "0.6.0",
       "title": "Schema Version",
       "type": "string"
     },

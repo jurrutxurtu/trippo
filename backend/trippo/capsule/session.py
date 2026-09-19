@@ -170,6 +170,18 @@ def _dispatch(trip: Trip, op: str, p: dict[str, Any]) -> None:
             ops.attach_track(trip, p["event_id"], p["track_id"])
         case "detach_track":
             ops.detach_track(trip, p["event_id"], p["track_id"])
+        case "group_events":
+            ops.group_events(
+                trip,
+                list(p["event_ids"]),
+                p["title"],
+                p.get("representative_id"),
+                p.get("summary"),
+            )
+        case "ungroup_event":
+            ops.ungroup_event(trip, p["event_id"])
+        case "set_summary":
+            ops.set_summary(trip, p["event_id"], p.get("summary", ""))
         case "finalise":
             ops.finalise(trip)
         case "reopen":

@@ -332,6 +332,11 @@ function EventRow({
               <span>&middot; {event.media_ids.length} photos</span>
             )}
           </div>
+          {event.summary && (
+            <p className="mt-1 text-[11px] italic leading-relaxed text-zinc-500">
+              {event.summary}
+            </p>
+          )}
           <PhotoStrip trip={trip} event={event} columns={6} compact />
           {track && (
             <div className="tnum mt-1 flex items-center gap-3 text-[11px] text-zinc-600">

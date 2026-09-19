@@ -24,6 +24,9 @@ class GeminiProvider:
         self._model = model
         self._client: Any = None
         self.failures = 0
+        #: The last thing that went wrong. Surfaced to the user, because a blocked key
+        #: and an empty answer are very different problems that look identical.
+        self.last_error: str | None = None
 
     @property
     def available(self) -> bool:
@@ -62,11 +65,33 @@ class GeminiProvider:
             text = (result.text or "").strip()
             if not text:
                 self.failures += 1
-                return LlmResponse(ok=False, error="Empty response.")
+                self.last_error = "The model returned nothing."
+                return LlmResponse(ok=False, error=self.last_error)
+            self.last_error = None
             return LlmResponse(data=json.loads(text))
         except Exception as exc:
             self.failures += 1
-            return LlmResponse(ok=False, error=str(exc)[:200])
+            self.last_error = _readable(exc)
+            return LlmResponse(ok=False, error=self.last_error)
+
+
+def _readable(exc: Exception) -> str:
+    """Turn a provider error into something a person can act on."""
+    text = str(exc)
+    if "API_KEY_SERVICE_BLOCKED" in text or "are blocked" in text:
+        return (
+            "Google is blocking this key for the Generative Language API. In Google Cloud "
+            "Console, open the key under APIs & Services -> Credentials and either remove "
+            "the API restriction or add 'Generative Language API' to it. Check the API is "
+            "enabled on the project too."
+        )
+    if "API_KEY_INVALID" in text or "API key not valid" in text:
+        return "GEMINI_API_KEY is not a valid key."
+    if "quota" in text.lower() or "RESOURCE_EXHAUSTED" in text:
+        return "The model's quota is exhausted. Try again later."
+    if "PERMISSION_DENIED" in text:
+        return "Permission denied by Google for this key."
+    return text[:200]
 
 
 def provider_from_env() -> Any:

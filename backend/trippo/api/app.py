@@ -437,6 +437,67 @@ def nearby_media(event_id: str, minutes: int = 45) -> JSONResponse:
     return JSONResponse({"window": minutes, "candidates": out, "totalOwned": len(owned)})
 
 
+SUGGESTION_KINDS = ("group", "demote", "day_title", "activity_shape", "place_name")
+
+
+@app.post("/api/suggestions/{kind}")
+def generate_suggestions(kind: str) -> JSONResponse:
+    """Ask the model for structural proposals of one kind.
+
+    Nothing is applied. Each suggestion carries the operations that would apply it, so the
+    user accepts or rejects, and an accepted one is undoable like any other edit.
+    """
+    from trippo.ai import suggestions as sg
+    from trippo.ai.gemini import provider_from_env
+
+    if kind not in SUGGESTION_KINDS:
+        raise HTTPException(status_code=400, detail=f"Unknown kind {kind!r}")
+
+    llm = provider_from_env()
+    # Demotion is a deterministic rule; the model only refines it. Everything else needs
+    # a model to say anything at all.
+    if not llm.available and kind != "demote":
+        return JSONResponse(status_code=204, content=None)
+
+    trip = _trip()
+    if kind == "place_name":
+        items = sg.suggest_place_names(llm, trip, candidates_for=_cached_candidates)
+    else:
+        items = sg.GENERATORS[kind](llm, trip)
+
+    return JSONResponse(
+        {
+            "kind": kind,
+            "items": [i.as_dict for i in items],
+            # A blocked key and an empty answer look identical otherwise.
+            "error": getattr(llm, "last_error", None),
+        }
+    )
+
+
+def _cached_candidates(event) -> list[str]:
+    """Names the geocoder already saw for this point, straight from the cache.
+
+    Re-querying Overpass to break a tie would be absurd -- the candidates were fetched
+    minutes ago and are sitting on disk.
+    """
+    from trippo.enrich.cache import GeocodeCache, cache_key
+
+    if not event.place or event.place.lat is None:
+        return []
+    names: list[str] = []
+    with GeocodeCache() as cache:
+        for provider in ("overpass", "nominatim"):
+            for radius in (100, 200, 300, 400, 500, 600, 800, 1000):
+                hit = cache.get(
+                    cache_key(event.place.lat, event.place.lon, radius, provider)
+                )
+                for c in hit or []:
+                    if c.name not in names:
+                        names.append(c.name)
+    return names[:10]
+
+
 @app.get("/api/curation/agenda")
 def curation_agenda() -> JSONResponse:
     """What the user still has to decide, ordered by how much it matters.

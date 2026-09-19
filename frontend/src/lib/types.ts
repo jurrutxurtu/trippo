@@ -125,6 +125,9 @@ export interface TripEvent {
   track_ids: string[];
   provenance: Provenance;
   title: string | null;
+  /** A model-written one-liner. Separate from 
+ote, which is the user's own words. */
+  summary: string | null;
   note: string | null;
   detail: EventDetail;
 }
@@ -317,5 +320,26 @@ export interface AgendaItem {
   dayId: string | null;
   eventId: string | null;
   actions: { label: string; op: string | null; payload: Record<string, unknown>; dismiss?: boolean }[];
+  mediaCount: number;
+}
+export type SuggestionKind =
+  | "group"
+  | "demote"
+  | "day_title"
+  | "activity_shape"
+  | "place_name";
+
+/**
+ * A structural change the model proposes over data it can already see.
+ * Nothing is applied until accepted; ops is exactly what would run.
+ */
+export interface Suggestion {
+  id: string;
+  kind: SuggestionKind;
+  title: string;
+  rationale: string;
+  ops: { op: string; payload: Record<string, unknown> }[];
+  eventIds: string[];
+  dayId: string | null;
   mediaCount: number;
 }

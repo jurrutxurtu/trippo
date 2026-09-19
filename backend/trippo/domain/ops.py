@@ -21,6 +21,7 @@ from typing import Any
 
 from trippo.domain.models import (
     DETAIL_FOR_TYPE,
+    AbsorbedRef,
     ActivityDetail,
     Event,
     EventStatus,
@@ -30,6 +31,7 @@ from trippo.domain.models import (
     Place,
     PlaceDetail,
     PlaceSource,
+    Provenance,
     TransitDetail,
     Trip,
     TripStatus,
@@ -360,6 +362,126 @@ def finalise(trip: Trip) -> None:
 def reopen(trip: Trip) -> None:
     trip.status = TripStatus.DRAFT
     trip.curated_at = None
+
+
+def set_summary(trip: Trip, event_id: str, summary: str) -> None:
+    """A model-written one-liner. Never touches the user's own note."""
+    e = _event(trip, event_id)
+    e.summary = summary.strip() or None
+
+
+def group_events(
+    trip: Trip,
+    event_ids: list[str],
+    title: str,
+    representative_id: str | None = None,
+    summary: str | None = None,
+) -> str:
+    """Fold several events into one, and return the new event's id.
+
+    A city centre produces a dozen stops eighty metres apart, each technically a place and
+    collectively meaningless. Grouping replaces them with the thing they actually were.
+
+    Nothing is lost. The new event spans the full range and takes every photograph; the
+    originals are suppressed with a reason and recorded in provenance.absorbed, so the
+    grouping is visible, reversible and undoable.
+
+    The map point comes from one of the originals -- epresentative_id, or the one with
+    the most photographs. A centroid would drop a pin in the middle of a road.
+    """
+    members = [_event(trip, i) for i in event_ids]
+    if len(members) < 2:
+        raise OpError("Grouping needs at least two events")
+
+    days = {e.day_id for e in members}
+    if len(days) > 1:
+        raise OpError("Only events on the same day can be grouped")
+    day_id = members[0].day_id
+    if day_id is None:
+        raise OpError("Cannot group events that belong to no day")
+
+    if any(e.track_ids for e in members):
+        raise OpError("Activities with tracks cannot be grouped")
+
+    rep = _event(trip, representative_id) if representative_id else None
+    if rep is None or rep.id not in {m.id for m in members}:
+        rep = max(members, key=lambda e: (len(e.media_ids), e.duration_s))
+
+    media: list[str] = []
+    for m in members:
+        media.extend(x for x in m.media_ids if x not in media)
+
+    grouped = Event(
+        id=f"evt_{uuid.uuid4().hex[:10]}",
+        day_id=day_id,
+        type=rep.type,
+        start=min(m.start for m in members),
+        end=max(m.end for m in members),
+        utc_offset_minutes=rep.utc_offset_minutes,
+        timezone=rep.timezone,
+        title=title.strip() or rep.title,
+        summary=summary.strip() if summary else None,
+        place=rep.place.model_copy() if rep.place else None,
+        geometry=rep.geometry.model_copy() if rep.geometry else None,
+        media_ids=media,
+        user_edited=True,
+        user_pinned=True,  # a deliberate grouping must survive the Golden Rule
+        provenance=Provenance(
+            rules=[f"grouped from {len(members)} events"],
+            confidence=1.0,
+            absorbed=[
+                AbsorbedRef(
+                    ref=m.id,
+                    reason=f"grouped into '{title.strip()}'",
+                    start=m.start,
+                    end=m.end,
+                )
+                for m in members
+            ],
+        ),
+        detail=PlaceDetail(
+            duration_s=(
+                max(m.end for m in members) - min(m.start for m in members)
+            ).total_seconds()
+        ),
+    )
+
+    for m in members:
+        m.media_ids = []
+        m.selected_media_ids = []
+        m.status = EventStatus.SUPPRESSED
+        m.suppress_reason = f"grouped into '{title.strip()}'"
+
+    trip.events.append(grouped)
+    day = _day(trip, day_id)
+    day.event_ids.append(grouped.id)
+    starts = {e.id: e.start for e in trip.events}
+    day.event_ids.sort(key=lambda i: starts.get(i, grouped.start))
+    return grouped.id
+
+
+def ungroup_event(trip: Trip, event_id: str) -> None:
+    """Undo a grouping: restore the members and remove the wrapper."""
+    grouped = _event(trip, event_id)
+    refs = [a.ref for a in grouped.provenance.absorbed]
+    if not refs:
+        raise OpError("That event was not created by grouping")
+
+    for ref in refs:
+        member = trip.event_by_id(ref)
+        if member is None:
+            continue
+        member.status = EventStatus.ACTIVE
+        member.suppress_reason = None
+
+    # Photographs go back to the pool rather than being guessed back into members: the
+    # grouping merged them, and only the user knows which belonged where.
+    trip.unassigned_media_ids.extend(
+        m for m in grouped.media_ids if m not in trip.unassigned_media_ids
+    )
+    grouped.media_ids = []
+    grouped.selected_media_ids = []
+    delete_event(trip, grouped.id)
 
 
 def set_trip_meta(trip: Trip, title: str | None, subtitle: str | None) -> None:

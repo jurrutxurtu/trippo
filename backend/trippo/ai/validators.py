@@ -24,6 +24,22 @@ _STOPWORDS = frozenset(
     }
 )
 
+#: Capitalised in a title, but describing a kind of place rather than naming one. A group
+#: called "Titanic Quarter" is grounded if "Titanic" is; "Quarter" is not an invention.
+_GEOGRAPHIC = frozenset(
+    {
+        "quarter", "district", "centre", "center", "town", "city", "village",
+        "old", "new", "upper", "lower", "great", "little",
+        "harbour", "harbor", "docks", "dock", "port", "quay", "waterfront",
+        "bay", "beach", "coast", "cliffs", "peninsula", "island", "isle",
+        "valley", "glen", "gorge", "pass", "ridge", "summit", "peak", "hill",
+        "park", "gardens", "garden", "square", "street", "road", "lane", "walk",
+        "castle", "abbey", "cathedral", "church", "museum", "gallery", "market",
+        "lake", "lough", "loch", "river", "falls", "forest", "woods", "trail",
+        "area", "side", "end", "gate", "bridge", "point", "head", "hall",
+    }
+)
+
 _WORD = re.compile(r"\b[A-Z][\w'\u00c0-\u024f-]+")
 
 
@@ -40,7 +56,8 @@ def proper_nouns(text: str) -> set[str]:
             # The first word of a sentence is capitalised by grammar, not by being a name.
             if i == 0 and match.start() == 0:
                 continue
-            if word.lower() in _STOPWORDS:
+            lowered = word.lower()
+            if lowered in _STOPWORDS or lowered in _GEOGRAPHIC:
                 continue
             out.add(word)
     return out

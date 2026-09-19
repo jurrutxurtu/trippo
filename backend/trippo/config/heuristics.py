@@ -125,6 +125,23 @@ RANK_MIN_CLEAR_MARGIN: Final = 0.15
 PLACE_CONFIDENCE_CLEAR: Final = 0.9
 PLACE_CONFIDENCE_CONTESTED: Final = 0.6
 
+# --------------------------------------------------------------------------- suggestions
+#: A run of stops closer together than this in time is probably one visit.
+GROUP_MAX_GAP_MIN: Final = 40
+#: ...and closer than this in space. A city block, not a district: grouping too widely
+#: turns a day of real places into one vague blob.
+GROUP_MAX_SPAN_M: Final = 700.0
+#: Below this it is not a group, it is two stops.
+GROUP_MIN_EVENTS: Final = 3
+#: A stop shorter than this, with no photographs, was passing through beyond reasonable
+#: doubt. Proposed even with no model. Never applied to anything with a photograph.
+PASSING_MAX_MINUTES: Final = 12
+#: With a model available, widen the net to here and let it judge. The Golden Rule already
+#: suppressed everything under PRUNE_MIN_DURATION_MIN unless it had a name, so the events
+#: left in this band are precisely the ones geocoding lent a significance they may not
+#: deserve -- a named junction is still a junction.
+PASSING_REVIEW_MAX_MINUTES: Final = 35
+
 # --------------------------------------------------------------------------- confidence
 CONFIDENCE_TIMELINE_MOVE: Final = 0.6
 CONFIDENCE_MEDIA_CLUSTER: Final = 0.4
