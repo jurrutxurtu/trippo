@@ -9,14 +9,17 @@ browser never sees an original and never holds 8 GB in memory.
 
 from __future__ import annotations
 
+import io
 import json
 import mimetypes
 import os
+import shutil
+import zipfile
 from datetime import date as _date
 from functools import lru_cache
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -34,9 +37,19 @@ mimetypes.add_type("image/avif", ".avif")
 
 app = FastAPI(title="Trippo", version="0.4.0")
 
+cors_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:8787",
+    "http://127.0.0.1:8787",
+]
+if extra := os.environ.get("TRIPPO_CORS_ORIGINS"):
+    cors_origins.extend([o.strip() for o in extra.split(",") if o.strip()])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=cors_origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -150,6 +163,49 @@ def delete_capsule(capsule_id: str) -> JSONResponse:
     except (FileNotFoundError, ValueError) as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return JSONResponse({"deleted": capsule_id})
+
+
+@app.post("/api/capsules/upload")
+async def upload_capsule(file: UploadFile = File(...)) -> JSONResponse:
+    """Import a .capsule directory packaged as a .zip archive into the workspace."""
+    from trippo.service import library
+
+    if not file.filename or not file.filename.endswith((".zip", ".capsule")):
+        raise HTTPException(
+            status_code=400, detail="Only .zip archives containing a capsule are supported"
+        )
+
+    content = await file.read()
+    try:
+        with zipfile.ZipFile(io.BytesIO(content)) as z:
+            members = z.namelist()
+            manifest = next(
+                (m for m in members if m == "capsule.json" or m.endswith("/capsule.json")), None
+            )
+            if not manifest:
+                raise HTTPException(
+                    status_code=400, detail="Archive does not contain a valid capsule.json"
+                )
+
+            target_name = file.filename.removesuffix(".zip")
+            if not target_name.endswith(".capsule"):
+                target_name += ".capsule"
+            target_dir = library.workspace() / target_name
+            target_dir.mkdir(parents=True, exist_ok=True)
+
+            prefix = manifest.removesuffix("capsule.json")
+            for member in members:
+                if member.endswith("/"):
+                    continue
+                rel_path = member[len(prefix) :] if member.startswith(prefix) else member
+                dest = target_dir / rel_path
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                with z.open(member) as source, open(dest, "wb") as target:
+                    shutil.copyfileobj(source, target)
+    except zipfile.BadZipFile as exc:
+        raise HTTPException(status_code=400, detail="Invalid zip archive") from exc
+
+    return JSONResponse({"status": "imported", "capsuleId": target_name})
 
 
 # ============================================================================ creation
@@ -600,3 +656,31 @@ def suggest(req: SuggestRequest) -> JSONResponse:
     return JSONResponse(
         {"ok": True, "value": result.value, "alternatives": result.alternatives}
     )
+
+
+# ============================================================================ frontend spa
+_static_dir_env = os.environ.get("TRIPPO_STATIC_DIR")
+_static_dir = (
+    Path(_static_dir_env)
+    if _static_dir_env
+    else Path(__file__).resolve().parents[3] / "frontend" / "dist"
+)
+
+if _static_dir.is_dir() and (_static_dir / "index.html").is_file():
+    _assets_dir = _static_dir / "assets"
+    if _assets_dir.is_dir():
+        app.mount("/assets", StaticFiles(directory=str(_assets_dir)), name="assets")
+
+    @app.get("/")
+    async def serve_spa_root() -> FileResponse:
+        return FileResponse(_static_dir / "index.html")
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str) -> FileResponse:
+        if full_path.startswith(("api/", "media/", "tracks/")):
+            raise HTTPException(status_code=404, detail="Not found")
+        candidate = _static_dir / full_path
+        if candidate.is_file():
+            return FileResponse(candidate)
+        return FileResponse(_static_dir / "index.html")
+

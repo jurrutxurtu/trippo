@@ -1,0 +1,40 @@
+services:
+  trippo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ghcr.io/jurrutxurtu/trippo:latest
+    container_name: trippo-app
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8787:8787"
+    environment:
+      - TRIPPO_WORKSPACE=/data/capsules
+      - TRIPPO_HEADLESS=1
+      - TRIPPO_STATIC_DIR=/app/static
+      - TRIPPO_CORS_ORIGINS=*
+      - MAPTILER_KEY=${MAPTILER_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    volumes:
+      - ./data:/data
+
+  # Optional local Caddy container (only run if using: docker compose --profile with-caddy up -d)
+  caddy:
+    profiles: ["with-caddy"]
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - trippo
+
+volumes:
+  caddy_data:
+  caddy_config:

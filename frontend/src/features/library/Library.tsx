@@ -19,15 +19,46 @@ export function Library() {
             <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">Trips</h1>
             <p className="mt-1 font-mono text-[11px] text-zinc-400">{workspace}</p>
           </div>
-          <button
-            onClick={() => {
-              resetDraft();
-              go("create");
-            }}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500"
-          >
-            New trip
-          </button>
+          <div className="flex items-center gap-3">
+            <label className="cursor-pointer rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50">
+              Import capsule (.zip)
+              <input
+                type="file"
+                accept=".zip,.capsule"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const formData = new FormData();
+                  formData.append("file", file);
+                  try {
+                    const res = await fetch("/api/capsules/upload", {
+                      method: "POST",
+                      body: formData,
+                    });
+                    if (res.ok) {
+                      await loadLibrary();
+                    } else {
+                      const err = await res.json();
+                      alert(err.detail ?? "Upload failed");
+                    }
+                  } catch {
+                    alert("Upload error");
+                  }
+                  e.target.value = "";
+                }}
+              />
+            </label>
+            <button
+              onClick={() => {
+                resetDraft();
+                go("create");
+              }}
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500"
+            >
+              New trip
+            </button>
+          </div>
         </header>
 
         {loadingLibrary ? (

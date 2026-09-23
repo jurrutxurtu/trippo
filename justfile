@@ -79,3 +79,15 @@ prototypes capsule:
     powershell -NoProfile -Command \
         "New-Item -ItemType Directory -Force -Path prototypes/capsule/media | Out-Null; \
          Copy-Item '{{capsule}}/media/thumb' -Destination prototypes/capsule/media/ -Recurse -Force"
+
+# Build the all-in-one Docker image locally.
+docker-build:
+    docker build -t trippo:latest .
+
+# Run the complete stack (app + Caddy) in Docker.
+docker-up:
+    docker compose up -d
+
+# Stop the Docker stack.
+docker-down:
+    docker compose down

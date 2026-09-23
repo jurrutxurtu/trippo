@@ -12,6 +12,8 @@ anyone running the backend elsewhere.
 
 from __future__ import annotations
 
+import os
+import sys
 import threading
 import uuid
 from dataclasses import dataclass, field
@@ -153,6 +155,11 @@ def pick_file(title: str = "Choose a file") -> str | None:
 
 
 def _pick(title: str, folder: bool) -> str | None:
+    if os.environ.get("TRIPPO_HEADLESS") or (
+        sys.platform.startswith("linux") and not os.environ.get("DISPLAY")
+    ):
+        return None
+
     result: dict[str, Any] = {"path": None}
 
     def run() -> None:

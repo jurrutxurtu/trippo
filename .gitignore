@@ -17,9 +17,14 @@ dist/
 .env
 .env.*
 !.env.example
+*.key
+*.pub
+ssh-key-*
 
 # Local data / caches
 *.capsule/
+capsules/
+export/
 .trippo-cache/
 geocode-cache.sqlite*
 scratch/
