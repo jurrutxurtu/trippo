@@ -12,6 +12,7 @@ venv/
 node_modules/
 dist/
 .vite/
+*.tsbuildinfo
 
 # Env & secrets
 .env

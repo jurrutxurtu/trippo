@@ -208,6 +208,68 @@ async def upload_capsule(file: UploadFile = File(...)) -> JSONResponse:
     return JSONResponse({"status": "imported", "capsuleId": target_name})
 
 
+@app.post("/api/capsules/build-preprocessed")
+async def build_preprocessed(file: UploadFile = File(...)) -> JSONResponse:
+    """Build a capsule from client-side preprocessed data packaged in a zip.
+
+    Used when ingesting via browser / remote server: client extracted EXIF and resized
+    thumbnails in JavaScript, then uploaded this lightweight bundle.
+    """
+    import tempfile
+    import zipfile
+    from datetime import date as _date
+
+    from trippo.service import jobs, library
+    from trippo.service.preprocessed import PreprocessedBuildRequest
+
+    staging_dir = Path(tempfile.mkdtemp(prefix="trippo_preprocessed_"))
+    try:
+        content = await file.read()
+        with zipfile.ZipFile(io.BytesIO(content)) as z:
+            z.extractall(staging_dir)
+
+        manifest_path = staging_dir / "ingest_manifest.json"
+        if not manifest_path.is_file():
+            shutil.rmtree(staging_dir, ignore_errors=True)
+            raise HTTPException(
+                status_code=400, detail="Missing ingest_manifest.json in archive"
+            )
+
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        title = (manifest.get("title") or "Untitled trip").strip()
+        description = manifest.get("description")
+        date_from_str = manifest.get("date_from")
+        date_to_str = manifest.get("date_to")
+        default_offset = int(manifest.get("default_offset_minutes") or 0)
+        enrich = bool(manifest.get("enrich", True))
+
+        date_from = _date.fromisoformat(date_from_str) if date_from_str else None
+        date_to = _date.fromisoformat(date_to_str) if date_to_str else None
+
+        out = library.unique_path(title)
+        job = jobs.start_preprocessed(
+            PreprocessedBuildRequest(
+                title=title,
+                description=description,
+                out=out,
+                staging_dir=staging_dir,
+                date_from=date_from,
+                date_to=date_to,
+                default_offset_minutes=default_offset,
+                enrich=enrich,
+            )
+        )
+        return JSONResponse({"jobId": job.id, "capsuleId": out.name})
+    except zipfile.BadZipFile as exc:
+        shutil.rmtree(staging_dir, ignore_errors=True)
+        raise HTTPException(status_code=400, detail="Invalid zip archive") from exc
+    except HTTPException:
+        raise
+    except Exception as exc:
+        shutil.rmtree(staging_dir, ignore_errors=True)
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
 # ============================================================================ creation
 
 

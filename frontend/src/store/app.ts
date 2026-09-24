@@ -64,6 +64,7 @@ interface State {
   setPath: (field: "timeline" | "gpx" | "media", value: string) => void;
   proposeDates: () => Promise<void>;
   startBuild: () => Promise<void>;
+  watchJob: (jobId: string, capsuleId: string) => void;
   loadReport: () => Promise<void>;
 }
 
@@ -216,6 +217,10 @@ export const useApp = create<State>((set, get) => ({
     }
 
     const { jobId, capsuleId } = await res.json();
+    get().watchJob(jobId, capsuleId);
+  },
+
+  watchJob(jobId: string, capsuleId: string) {
     set({
       jobId,
       newCapsuleId: capsuleId,

@@ -122,3 +122,18 @@ Cuando termine el pipeline, accede desde tu navegador a:
 👉 `https://mitrippo.duckdns.org`
 
 Caddy habrá obtenido automáticamente un certificado SSL gratuito de Let's Encrypt y la aplicación estará lista para usarse.
+
+---
+
+## 7. Arquitectura de Ingesta Web: Preprocesamiento en Cliente
+
+Para permitir crear viajes directamente desde la interfaz web sin subir gigabytes de fotos originales a la nube ni agotar el disco de Oracle Cloud Free Tier:
+
+1. **En el Navegador (Local):**
+   - El usuario selecciona su carpeta de fotos mediante el selector de carpetas estándar del navegador.
+   - Mediante JavaScript (`exifr` + Canvas API), el navegador extrae en local los metadatos EXIF (fecha/hora, coordenadas GPS, dimensiones) y genera miniaturas WebP optimizadas (256px y 1600px).
+   - Un paquete ligero de ~30–50 MB (frente a 10 GB de fotos crudas) se envía por HTTP al servidor.
+2. **En el Servidor (Oracle Cloud):**
+   - El endpoint `POST /api/capsules/build-preprocessed` recibe el paquete y lanza la ingesta en segundo plano.
+   - Ejecuta el pipeline de Trippo: normalización temporal, clustering de paradas, detección de pernoctas, geocodificación con OSM/Nominatim y sugerencias de IA.
+   - Almacena la cápsula directamente en `/data/capsules/` y emite el progreso en tiempo real vía Server-Sent Events (SSE).

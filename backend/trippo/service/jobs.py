@@ -13,6 +13,7 @@ anyone running the backend elsewhere.
 from __future__ import annotations
 
 import os
+import shutil
 import sys
 import threading
 import uuid
@@ -22,6 +23,7 @@ from pathlib import Path
 from typing import Any
 
 from trippo.service.build import BuildRequest, run_build
+from trippo.service.preprocessed import PreprocessedBuildRequest, run_build_preprocessed
 
 
 @dataclass
@@ -134,6 +136,34 @@ def start(req: BuildRequest, on_done=None) -> Job:
             job.finish("failed", str(exc)[:300])
 
     threading.Thread(target=worker, daemon=True, name=f"ingest-{job.id}").start()
+    return job
+
+
+def start_preprocessed(
+    req: PreprocessedBuildRequest, cleanup_staging: bool = True
+) -> Job:
+    """Run a preprocessed build in the background. Returns immediately with a job to watch."""
+    job = Job(id=uuid.uuid4().hex[:12], title=req.title, out=req.out)
+    _JOBS[job.id] = job
+
+    def progress(stage: str, message: str, done: int, total: int) -> None:
+        job.emit(JobEvent(stage=stage, message=message, done=done, total=total))
+
+    def worker() -> None:
+        try:
+            result = run_build_preprocessed(req, progress)
+            job.capsule_id = result.out.name
+            job.finish("done")
+        except Exception as exc:
+            job.emit(JobEvent(stage="error", message=str(exc)[:300]))
+            job.finish("failed", str(exc)[:300])
+        finally:
+            if cleanup_staging and req.staging_dir.exists():
+                shutil.rmtree(req.staging_dir, ignore_errors=True)
+
+    threading.Thread(
+        target=worker, daemon=True, name=f"ingest-preprocessed-{job.id}"
+    ).start()
     return job
 
 
