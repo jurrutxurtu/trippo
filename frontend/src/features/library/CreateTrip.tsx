@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useApp } from "@/store/app";
 import { preprocessAndUpload, PreprocessProgress } from "@/lib/preprocessor";
 
@@ -6,8 +6,9 @@ import { preprocessAndUpload, PreprocessProgress } from "@/lib/preprocessor";
  * Creating a trip.
  *
  * Supports both:
- * 1. Web / Remote mode: selects photos, GPX and Timeline directly in the browser,
- *    extracts EXIF and generates WebP thumbnails locally, and uploads a lightweight bundle.
+ * 1. Web / Remote mode: selects photos, GPX and Timeline directly in the browser
+ *    (via folder picker, file picker, or drag-and-drop), extracts EXIF and generates
+ *    WebP thumbnails locally, and uploads a lightweight bundle to the server.
  * 2. Local-first mode: reads local file paths directly via backend file picker or manual paste.
  */
 export function CreateTrip() {
@@ -39,27 +40,38 @@ export function CreateTrip() {
 
   // Auto-detect dates from selected media files
   const handleSelectMedia = (files: File[]) => {
+    console.log(`[Trippo] Selected ${files.length} media files`);
     setMediaFiles(files);
     setLocalError(null);
 
     // Try guessing date range from file dates or names
     if (!draft.dateFrom || !draft.dateTo) {
-      const dates: Date[] = [];
-      const sample = files.slice(0, 150);
-      for (const f of sample) {
-        if (f.lastModified) {
-          dates.push(new Date(f.lastModified));
+      try {
+        const dates: Date[] = [];
+        const sample = files.slice(0, 200);
+        for (const f of sample) {
+          if (f.lastModified) {
+            const d = new Date(f.lastModified);
+            if (!isNaN(d.getTime())) {
+              dates.push(d);
+            }
+          }
         }
-      }
-      if (dates.length > 0) {
-        dates.sort((a, b) => a.getTime() - b.getTime());
-        const first = dates[0];
-        const last = dates[dates.length - 1];
-        if (first && last) {
-          const start = first.toISOString().split("T")[0];
-          const end = last.toISOString().split("T")[0];
-          setDraft({ dateFrom: start, dateTo: end });
+        if (dates.length > 0) {
+          dates.sort((a, b) => a.getTime() - b.getTime());
+          const first = dates[0];
+          const last = dates[dates.length - 1];
+          if (first && last) {
+            const start = first.toISOString().split("T")[0];
+            const end = last.toISOString().split("T")[0];
+            if (start && end) {
+              console.log(`[Trippo] Detected date range: ${start} to ${end}`);
+              setDraft({ dateFrom: start, dateTo: end });
+            }
+          }
         }
+      } catch (err) {
+        console.error("[Trippo] Error calculating date range:", err);
       }
     }
   };
@@ -96,6 +108,13 @@ export function CreateTrip() {
       await startBuild();
     }
   };
+
+  // Helper to format file size
+  const totalMediaBytes = mediaFiles.reduce((sum, f) => sum + f.size, 0);
+  const mediaSizeFormatted =
+    totalMediaBytes > 1024 * 1024 * 1024
+      ? `${(totalMediaBytes / (1024 * 1024 * 1024)).toFixed(1)} GB`
+      : `${(totalMediaBytes / (1024 * 1024)).toFixed(0)} MB`;
 
   return (
     <div className="min-h-full bg-zinc-50">
@@ -197,14 +216,21 @@ export function CreateTrip() {
           <section className="col-span-7 space-y-4">
             <SourceCard
               title="Photos and videos"
-              hint="A folder. Sub-folders are included."
+              hint="Select a folder, multiple photo files, or drag and drop them here."
               value={
                 mediaFiles.length > 0
-                  ? `${mediaFiles.length} file(s) selected in browser`
+                  ? `${mediaFiles.length} photo(s) selected (${mediaSizeFormatted})`
                   : draft.media.join("  \u00b7  ")
               }
               fileCount={mediaFiles.length}
+              subDetail={
+                mediaFiles.length > 0
+                  ? mediaFiles.slice(0, 3).map((f) => f.name).join(", ") +
+                    (mediaFiles.length > 3 ? "..." : "")
+                  : undefined
+              }
               isFolder
+              allowFilePicker
               onSelectFiles={handleSelectMedia}
               onServerPick={() => void pick("media")}
               onPaste={(v) => setPath("media", v)}
@@ -221,11 +247,17 @@ export function CreateTrip() {
               hint="One or more .gpx files from Garmin, Strava, Wikiloc&hellip;"
               value={
                 gpxFiles.length > 0
-                  ? `${gpxFiles.length} GPX track(s) selected in browser`
+                  ? `${gpxFiles.length} GPX track(s) selected`
                   : draft.gpx ?? ""
               }
               fileCount={gpxFiles.length}
+              subDetail={
+                gpxFiles.length > 0
+                  ? gpxFiles.map((f) => f.name).join(", ")
+                  : undefined
+              }
               accept=".gpx"
+              multiple
               onSelectFiles={(files) => setGpxFiles(files)}
               onServerPick={() => void pick("gpx")}
               onPaste={(v) => setPath("gpx", v)}
@@ -241,7 +273,7 @@ export function CreateTrip() {
               hint="The Timeline JSON from a Google Takeout or on-device export."
               value={
                 timelineFile
-                  ? `${timelineFile.name} selected in browser`
+                  ? `${timelineFile.name} (${(timelineFile.size / 1024).toFixed(0)} KB)`
                   : draft.timeline ?? ""
               }
               fileCount={timelineFile ? 1 : 0}
@@ -344,10 +376,64 @@ function Toggle({
   );
 }
 
+// Helper to extract dropped files recursively from dataTransfer
+async function extractDroppedFiles(dataTransfer: DataTransfer): Promise<File[]> {
+  const files: File[] = [];
+  const items = Array.from(dataTransfer.items || []);
+
+  async function traverseEntry(entry: any) {
+    if (!entry) return;
+    if (entry.isFile) {
+      await new Promise<void>((resolve) => {
+        entry.file(
+          (f: File) => {
+            files.push(f);
+            resolve();
+          },
+          () => resolve()
+        );
+      });
+    } else if (entry.isDirectory) {
+      const reader = entry.createReader();
+      const readEntries = async () => {
+        const entries: any[] = await new Promise((resolve) => {
+          reader.readEntries(
+            (results: any[]) => resolve(results),
+            () => resolve([])
+          );
+        });
+        if (entries.length > 0) {
+          for (const child of entries) {
+            await traverseEntry(child);
+          }
+          await readEntries();
+        }
+      };
+      await readEntries();
+    }
+  }
+
+  if (items.length > 0 && typeof items[0]?.webkitGetAsEntry === "function") {
+    for (const item of items) {
+      const entry = item.webkitGetAsEntry();
+      if (entry) {
+        await traverseEntry(entry);
+      }
+    }
+  }
+
+  if (files.length === 0 && dataTransfer.files.length > 0) {
+    return Array.from(dataTransfer.files);
+  }
+
+  return files;
+}
+
 function SourceCard({
   title,
   hint,
   value,
+  subDetail,
   fileCount = 0,
   onSelectFiles,
   onServerPick,
@@ -357,11 +443,13 @@ function SourceCard({
   multiple,
   file,
   isFolder,
+  allowFilePicker,
   accept,
 }: {
   title: string;
   hint: string;
   value: string;
+  subDetail?: string;
   fileCount?: number;
   onSelectFiles?: (files: File[]) => void;
   onServerPick?: () => void;
@@ -371,11 +459,22 @@ function SourceCard({
   multiple?: boolean;
   file?: boolean;
   isFolder?: boolean;
+  allowFilePicker?: boolean;
   accept?: string;
 }) {
   const [typing, setTyping] = useState(false);
   const [text, setText] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const folderInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (folderInputRef.current) {
+      folderInputRef.current.setAttribute("webkitdirectory", "");
+      folderInputRef.current.setAttribute("directory", "");
+    }
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -383,24 +482,50 @@ function SourceCard({
     }
   };
 
-  const handleClickChoose = () => {
-    if (inputRef.current) {
-      inputRef.current.value = "";
-      inputRef.current.click();
-    } else if (onServerPick) {
-      onServerPick();
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    try {
+      const dropped = await extractDroppedFiles(e.dataTransfer);
+      if (dropped.length > 0) {
+        onSelectFiles?.(dropped);
+      }
+    } catch (err) {
+      console.error("[Trippo] Error reading dropped files:", err);
     }
   };
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-      {/* Hidden file input for browser file selection */}
+    <div
+      onDragOver={(e) => {
+        e.preventDefault();
+        setIsDragging(true);
+      }}
+      onDragLeave={() => setIsDragging(false)}
+      onDrop={handleDrop}
+      className={`rounded-xl border transition-colors p-5 shadow-sm ${
+        isDragging
+          ? "border-indigo-500 bg-indigo-50/50 ring-2 ring-indigo-500/20"
+          : "border-zinc-200 bg-white"
+      }`}
+    >
+      {/* Folder Picker Input (if isFolder) */}
+      {isFolder && (
+        <input
+          ref={folderInputRef}
+          type="file"
+          multiple
+          onChange={handleFileChange}
+          className="hidden"
+        />
+      )}
+
+      {/* Files Picker Input */}
       <input
-        ref={inputRef}
+        ref={fileInputRef}
         type="file"
-        multiple={multiple || isFolder}
+        multiple={multiple}
         accept={accept}
-        {...(isFolder ? ({ webkitdirectory: "", directory: "" } as React.InputHTMLAttributes<HTMLInputElement>) : {})}
         onChange={handleFileChange}
         className="hidden"
       />
@@ -420,23 +545,58 @@ function SourceCard({
             )}
           </div>
           {value ? (
-            <p className="mt-2 break-all font-mono text-[11px] text-zinc-700">{value}</p>
+            <div>
+              <p className="mt-2 break-all font-mono text-[11px] text-zinc-800 font-medium">
+                {value}
+              </p>
+              {subDetail && (
+                <p className="mt-0.5 text-[11px] text-zinc-500 truncate">{subDetail}</p>
+              )}
+            </div>
           ) : (
             <p className="mt-1.5 text-xs text-zinc-500">{hint}</p>
           )}
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-1">
-          <button
-            onClick={handleClickChoose}
-            disabled={picking}
-            className="rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
-          >
-            {picking
-              ? "Waiting\u2026"
-              : value && !multiple
-                ? "Change"
-                : `Choose ${isFolder ? "folder" : file ? "file" : "files"}\u2026`}
-          </button>
+
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <div className="flex items-center gap-1.5">
+            {isFolder && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (folderInputRef.current) {
+                    folderInputRef.current.value = "";
+                    folderInputRef.current.click();
+                  }
+                }}
+                disabled={picking}
+                className="rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+              >
+                Choose folder&hellip;
+              </button>
+            )}
+
+            {(allowFilePicker || !isFolder) && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = "";
+                    fileInputRef.current.click();
+                  }
+                }}
+                disabled={picking}
+                className="rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+              >
+                {isFolder
+                  ? "Choose files&hellip;"
+                  : value && !multiple
+                    ? "Change"
+                    : `Choose ${file ? "file" : "files"}&hellip;`}
+              </button>
+            )}
+          </div>
+
           {value && (
             <button
               onClick={onClear}
