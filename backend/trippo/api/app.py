@@ -68,14 +68,100 @@ def load_capsule(root: Path) -> Trip:
 
 
 def _mount_media(root: Path) -> None:
-    """Expose the capsule's derivative folders, and nothing else."""
+    """Ensure derivative folders exist."""
     for name in ("media", "tracks"):
-        folder = root / name
-        folder.mkdir(parents=True, exist_ok=True)
-        route = f"/{name}"
-        # Opening a different capsule replaces the mount rather than stacking one.
-        app.routes[:] = [r for r in app.routes if getattr(r, "path", None) != route]
-        app.mount(route, StaticFiles(directory=str(folder)), name=name)
+        (root / name).mkdir(parents=True, exist_ok=True)
+
+
+def _is_safe_child(target: Path, parent: Path) -> bool:
+    try:
+        return target.resolve().is_relative_to(parent.resolve())
+    except (ValueError, RuntimeError):
+        return False
+
+
+@app.get("/media/{subpath:path}")
+def get_media(subpath: str) -> FileResponse:
+    """Serve media derivatives (thumbnails and web-size images).
+
+    Tries the currently opened capsule first. If no capsule is open or the file is not
+    found, checks other capsules in the workspace so library cards render their cover images.
+    """
+    clean_subpath = subpath.removeprefix("media/").lstrip("/")
+    root = _STATE.get("root")
+    if root:
+        media_root = Path(str(root)) / "media"
+        target = media_root / clean_subpath
+        if _is_safe_child(target, media_root) and target.is_file():
+            return FileResponse(
+                target.resolve(),
+                headers={"Cache-Control": "public, max-age=86400, immutable"},
+            )
+
+    from trippo.service import library
+
+    for c in library.list_capsules():
+        media_root = Path(c.path) / "media"
+        target = media_root / clean_subpath
+        if _is_safe_child(target, media_root) and target.is_file():
+            return FileResponse(
+                target.resolve(),
+                headers={"Cache-Control": "public, max-age=86400, immutable"},
+            )
+
+    raise HTTPException(status_code=404, detail="Media not found")
+
+
+@app.get("/tracks/{subpath:path}")
+def get_track_file(subpath: str) -> FileResponse:
+    """Serve track geometry files."""
+    clean_subpath = subpath.removeprefix("tracks/").lstrip("/")
+    root = _STATE.get("root")
+    if root:
+        tracks_root = Path(str(root)) / "tracks"
+        target = tracks_root / clean_subpath
+        if _is_safe_child(target, tracks_root) and target.is_file():
+            return FileResponse(
+                target.resolve(),
+                media_type="application/json",
+                headers={"Cache-Control": "public, max-age=86400, immutable"},
+            )
+
+    from trippo.service import library
+
+    for c in library.list_capsules():
+        tracks_root = Path(c.path) / "tracks"
+        target = tracks_root / clean_subpath
+        if _is_safe_child(target, tracks_root) and target.is_file():
+            return FileResponse(
+                target.resolve(),
+                media_type="application/json",
+                headers={"Cache-Control": "public, max-age=86400, immutable"},
+            )
+
+    raise HTTPException(status_code=404, detail="Track not found")
+
+
+@app.get("/api/capsules/{capsule_id}/media/{subpath:path}")
+def get_capsule_media(capsule_id: str, subpath: str) -> FileResponse:
+    """Serve media for a specific capsule by ID (e.g. for library covers)."""
+    from trippo.service import library
+
+    try:
+        root = library.resolve(capsule_id)
+    except (FileNotFoundError, ValueError) as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    clean_subpath = subpath.removeprefix("media/").lstrip("/")
+    media_root = root / "media"
+    target = media_root / clean_subpath
+    if not _is_safe_child(target, media_root) or not target.is_file():
+        raise HTTPException(status_code=404, detail="Media not found")
+    return FileResponse(
+        target.resolve(),
+        headers={"Cache-Control": "public, max-age=86400, immutable"},
+    )
+
 
 
 def _session():

@@ -104,3 +104,15 @@ UI action → command → zustand/immer patch → optimistic render
 
 Invariants are checked server-side on every operation. The most important one: **every media item
 is owned by exactly one active event or by the unassigned pool — never both, never neither.**
+
+## Media and asset serving
+
+Capsules store media derivatives under `media/thumb/` (256px WebP) and `media/web/` (1600px WebP), plus track geometries under `tracks/`.
+
+- The backend serves these via static endpoints:
+  - `/media/{subpath}`: serves from the active capsule, with fallback to any capsule in the workspace (so covers resolve even if no capsule is currently open).
+  - `/api/capsules/{id}/media/{subpath}`: deterministically serves derivative media for a specific capsule (used by the Library).
+  - `/tracks/{subpath}`: serves track GeoJSON/elevation geometries.
+- Paths are validated with `is_relative_to` to prevent path traversal.
+- Routes are registered before the SPA catch-all route to prevent shadowing.
+

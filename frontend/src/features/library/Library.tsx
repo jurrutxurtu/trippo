@@ -94,7 +94,7 @@ export function Library() {
                   <div className="h-36 bg-zinc-100">
                     {c.cover && (
                       <img
-                        src={`/${c.cover}`}
+                        src={`/api/capsules/${encodeURIComponent(c.id)}/${c.cover}`}
                         alt=""
                         className="h-full w-full object-cover"
                       />
